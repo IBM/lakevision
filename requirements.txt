@@ -1,0 +1,4 @@
+pyiceberg
+pandas
+streamlit
+duckdb
