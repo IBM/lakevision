@@ -1,4 +1,5 @@
 pyiceberg
+s3fs
 pandas
 streamlit
 duckdb

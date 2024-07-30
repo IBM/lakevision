@@ -18,14 +18,11 @@ The easiest way is to run it with Docker.
 
     `docker build -t lakevision:1.0 .`
 
-2. Provide the configuration - you will need Iceberg Catalog URL, and authentication required by the catalog, AWS keys/configuration. Fill in these values in my.env file and source it.
-Eg:
-
-    `source my.env`
+2. Provide the configuration - you will need Iceberg Catalog URL, and authentication required by the catalog, AWS keys/configuration. Fill in these values in my.env file and provide it to the docker run command.
 
 3. Run the docker image, like:
 
-    `docker run -e PYICEBERG_CATALOG__DEFAULT__URI=$PYICEBERG_CATALOG__DEFAULT__URI -e PYICEBERG_CATALOG__DEFAULT__TOKEN=$PYICEBERG_CATALOG__DEFAULT__TOKEN -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -p 8501:8501 -it lakevision:1.0`
+    `docker run --env_file my.env -p 8501:8501 -it lakevision:1.0`
 
 4. The Lakevision application is built on Streamlit and it listens on port 8501. If everything built fine, you would see output on command line about the app listening on port 8501. Launch the browser http://localhost:8501 and you would see all the details of your Lakehouse.
 

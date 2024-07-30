@@ -7,9 +7,8 @@ import duckdb
 
 def init():
     cat = catalog.load_catalog("default", **{
-        'warehouse': 's3a://lake-llm',
-        'location': 's3a://lake-llm',
-        's3.endpoint': 'https://s3.direct.us-east.cloud-object-storage.appdomain.cloud',
+        's3.endpoint': os.environ.get("AWS_ENDPOINT"),
+	'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
         })
     return cat
 
@@ -18,7 +17,7 @@ def add_sidebar(ns_nav):
     other_env_label = os.environ.get("OTHER_ENV_LABEL")
     other_env_url = os.environ.get("OTHER_ENV_URL")
     st.sidebar.markdown( f"""
-    <b>IBM Data & Model Factory Lakehouse </b> <br />
+    <b>Apache Iceberg  Lakehouse </b> <br />
     :orange[ {env_label} ] <br />
     :blue[{ns_nav}] <br />
     <a href='{other_env_url}'>:gray[{other_env_label}]</a>
@@ -26,7 +25,7 @@ def add_sidebar(ns_nav):
 
 
 def create_ns_contents():
-    #st.markdown("<h2>IBM Data and Model Factory Lakehouse </h2>", unsafe_allow_html=True)
+    #st.markdown("<h2>Apache Iceberg Lakehouse </h2>", unsafe_allow_html=True)
     cat  = init()
     nss = cat.list_namespaces()
     nsl = list(nss)
@@ -72,18 +71,15 @@ def namespaces(ns, cat):
     data_df = pd.DataFrame({"Namespace": col1, "Table": col2})
     st.markdown(data_df.to_html(render_links=True, escape=False),unsafe_allow_html=True)
 
-def tables():
+def tables(namespace, table):
     add_sidebar('')
     cat = init()
-    params = st.experimental_get_query_params()
-    ns = params.get("namespace", ["bluepile"])[0]
-    tb = params.get("table", ["internet"])[0]
-    t = cat.load_table(ns+"."+tb)
+    t = cat.load_table(f"{namespace}.{table}")
     df = pd.DataFrame(columns=["Field_id", "Field", "DataType", "Required", "Comments"])
     for field in t.schema().fields:
         df2 = pd.DataFrame([[str(field.field_id), str(field.name), str(field.field_type), str(field.required), field.doc]], columns=["Field_id", "Field", "DataType", "Required", "Comments"])
         df = pd.concat([df, df2])
-    st.subheader(f'Namespace: :blue[_{ns}_]   Table: :blue[_{tb}_]', divider='orange')
+    st.subheader(f'Namespace: :blue[_{namespace}_]   Table: :blue[_{table}_]', divider='orange')
     st.markdown("**Schema**")
     st.dataframe(df, hide_index = True, use_container_width=True)
 
@@ -191,9 +187,9 @@ def get_partition_table(table_scan):
         pd = con.sql(f'SELECT partitions, sum(record_count) as record_count, sum(file_count) as file_count, sum(file_size_in_bytes)*1.0/1024/1024/1024 as file_size_gb FROM partitions group by partitions').df()
     st.dataframe(pd, hide_index = True)
 
-
-params = st.experimental_get_query_params()
-if not params:
-    create_ns_contents()
+ns = st.query_params.get_all('namespace')
+tb = st.query_params.get_all('table')
+if len(ns)>0 and len(tb)>0:
+    tables(ns[0], tb[0])
 else:
-    tables()
+    create_ns_contents()
