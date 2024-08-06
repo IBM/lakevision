@@ -1,5 +1,4 @@
-pyiceberg
+pyiceberg >= 0.7
 s3fs
 pandas
 streamlit
-duckdb
