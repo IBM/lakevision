@@ -22,7 +22,7 @@ The easiest way is to run it with Docker.
 
 3. Run the docker image, like:
 
-    `docker run --env_file my.env -p 8501:8501 -it lakevision:1.0`
+    `docker run --env-file my.env -p 8501:8501 -it lakevision:1.0`
 
 4. The Lakevision application is built on Streamlit and it listens on port 8501. If everything built fine, you would see output on command line about the app listening on port 8501. Launch the browser http://localhost:8501 and you would see all the details of your Lakehouse.
 
