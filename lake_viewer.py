@@ -30,17 +30,21 @@ class LakeView():
 
         if select_namespace:
             tables = self.catalog.list_tables(select_namespace)
-            select_table = st.sidebar.selectbox('Table',[".".join(table).split(".")[-1] for table in tables],None)
-            
-            #-- table
-            if select_table:
-                select_limit = st.sidebar.selectbox('Samples',[50, 100, 200])
+            if len(tables) > 0:
+                index = 0 if len(tables) == 1 else None
+                select_table = st.sidebar.selectbox('Table',[".".join(table).split(".")[-1] for table in tables],index)
+                
+                #-- table
+                if select_table:
+                    select_limit = st.sidebar.selectbox('Samples',[50, 100, 200])
 
-                #generate 
-                if 'selected_partition' in st.session_state:
-                    self.tables(ns=select_namespace,tb=select_table,partition=[st.session_state.selected_partition],limit=select_limit)
-                else:
-                    self.tables(ns=select_namespace,tb=select_table,partition=[],limit=select_limit)
+                    #generate 
+                    if 'selected_partition' in st.session_state:
+                        self.tables(ns=select_namespace,tb=select_table,partition=[st.session_state.selected_partition],limit=select_limit)
+                    else:
+                        self.tables(ns=select_namespace,tb=select_table,partition=[],limit=select_limit)
+            else:
+                st.sidebar.markdown("No tables found")
         
     def create_ns_contents(self):                
         nsl = self.get_namespaces()        
@@ -174,13 +178,15 @@ class LakeView():
                 st.write("No data")
 
         with tab6:
-            pat = t.inspect.entries()
-            if pat:
-                pdf = pat.to_pandas()
-                st.dataframe(pdf, use_container_width=True)
-            else:
+            try:
+                pat = t.inspect.entries()
+                if pat:
+                    pdf = pat.to_pandas()
+                    st.dataframe(pdf, use_container_width=True)
+                else:
+                    st.write("No data")
+            except:
                 st.write("No data")
-
         with tab7:
             pdf = t.inspect.history().to_pandas()
             st.dataframe(pdf, use_container_width=True)
