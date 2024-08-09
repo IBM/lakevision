@@ -8,8 +8,6 @@ import os
 import pyarrow as pa
 import pyarrow.ipc as ipc
 from streamlit.components.v1 import html
-from streamlit_javascript import st_javascript
-import pyperclip
 import json
 import dotenv
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
@@ -27,10 +25,6 @@ class LakeView():
             })
         self.namespace_options = []
 
-    def copy_to_clipboard(self, text):
-        pyperclip.copy(text)
-        st.toast(f"Copied to clipboard: {text}", icon='✅')
-
     @st.dialog("Go to Table")
     def search(self):
         tablename = st.text_input("Full table name: ",placeholder="<namespace>.<table>")
@@ -44,7 +38,7 @@ class LakeView():
                     st.session_state['table_name'] = table
                     st.rerun()
                 else:
-                    st.write(f"Unexisting namespace {namespace}")
+                    st.write(f"Namespace {namespace} does not exist!")
                     st.session_state['namespace_selection'] = None
             else:
                 st.write("Invalid tablename")
@@ -130,16 +124,12 @@ class LakeView():
         
 
         #create shareable buttons
-        left, middle, right = st.columns([0.86,0.07,0.07])
+        left, right = st.columns([0.93,0.07])
         left.subheader(f'Namespace: :blue[_{ns}_]   Table: :blue[_{tb}_]', divider='orange')
         relative_path = f"?namespace={ns}&table={tb}"
         if partition:
             relative_path = f"{relative_path}&partition={partition}"
-        middle.link_button(":rocket:",f"/{relative_path}" , help="Open current table view in a new tab")
-        url = st_javascript("await fetch('').then(r => window.parent.location.href)")
-        link_to_copy = f"{url}{relative_path}"
-        right.button(':link:', on_click=self.copy_to_clipboard, args=(link_to_copy,),help="Copy current table view direct link to clipboard")
-
+        right.link_button(":rocket:",f"/{relative_path}" , help="Open current table view in a new tab")
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Partitions & Sample", "Table",  "Snapshots", "Refs", "Manifests", "Entries", "History"])
             

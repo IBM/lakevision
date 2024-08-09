@@ -2,5 +2,3 @@ pyiceberg[s3fs]>=0.7
 pandas>=2.0.0
 streamlit>=1.37.0
 python-dotenv
-pyperclip
-streamlit_javascript
