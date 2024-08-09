@@ -8,8 +8,12 @@ import os
 import pyarrow as pa
 import pyarrow.ipc as ipc
 from streamlit.components.v1 import html
+from streamlit_javascript import st_javascript
+import pyperclip
+import json
 import dotenv
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
+
 
 class LakeView():
 
@@ -21,18 +25,61 @@ class LakeView():
                 's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
                 'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
             })
-        self.select_partition = None
+        self.namespace_options = []
+
+    def copy_to_clipboard(self, text):
+        pyperclip.copy(text)
+        st.toast(f"Copied to clipboard: {text}", icon='✅')
+
+    @st.dialog("Go to Table")
+    def search(self):
+        tablename = st.text_input("Full table name: ",placeholder="<namespace>.<table>")
+        if st.button("Submit"):
+            parts = tablename.split(".")
+            num_parts = len(parts)
+            if num_parts >= 2:
+                namespace, table =  '.'.join(parts[:num_parts -1]), parts[-1]
+                if namespace in self.namespace_options:
+                    st.session_state['namespace_selection'] = self.namespace_options.index(namespace)
+                    st.session_state['table_name'] = table
+                    st.rerun()
+                else:
+                    st.write(f"Unexisting namespace {namespace}")
+                    st.session_state['namespace_selection'] = None
+            else:
+                st.write("Invalid tablename")
         
-    def create_filters(self, namespaces: list[str]):
+    def create_filters(self, namespaces: list[str], ns: str = None, tb : str = None, partition : str = None):
         st.sidebar.markdown( f' <b> :orange[Apache Iceberg Lakehouse ]', unsafe_allow_html=True)
-        #-- Namespace
-        select_namespace = st.sidebar.selectbox('Namespace',[".".join(namespace) for namespace in namespaces],None)
+        if st.sidebar.button("Go to Table"):
+            self.search()
+
+        #-- Namespace        
+        self.namespace_options = [".".join(namespace) for namespace in namespaces]
+        if 'namespace_selection' not in st.session_state:
+            st.session_state['namespace_selection'] = None
+        if st.session_state['namespace_selection'] is None and ns:
+            if ns in self.namespace_options:
+                st.session_state['namespace_selection'] = self.namespace_options.index(ns)
+        select_namespace = st.sidebar.selectbox('Namespace',self.namespace_options,index=st.session_state['namespace_selection'])
 
         if select_namespace:
             tables = self.catalog.list_tables(select_namespace)
             if len(tables) > 0:
+                table_options = [".".join(table).split(".")[-1] for table in tables]
                 index = 0 if len(tables) == 1 else None
-                select_table = st.sidebar.selectbox('Table',[".".join(table).split(".")[-1] for table in tables],index)
+                if 'table_name' in st.session_state:
+                    if st.session_state['table_name'] in table_options:
+                        index = table_options.index(st.session_state['table_name'])
+                    else:
+                        if st.session_state['table_name'] is not None:
+                            st.sidebar.write(f"Table '{st.session_state['table_name']}' not found in the namespace!")
+                        st.session_state['table_name'] = None
+                else:
+                    if tb in table_options:
+                        index = table_options.index(tb)
+                
+                select_table = st.sidebar.selectbox('Table',table_options,index)
                 
                 #-- table
                 if select_table:
@@ -42,13 +89,14 @@ class LakeView():
                     if 'selected_partition' in st.session_state:
                         self.tables(ns=select_namespace,tb=select_table,partition=[st.session_state.selected_partition],limit=select_limit)
                     else:
-                        self.tables(ns=select_namespace,tb=select_table,partition=[],limit=select_limit)
+                        selected_partition = [partition] if partition is not None else []
+                        self.tables(ns=select_namespace,tb=select_table,partition=selected_partition,limit=select_limit)
             else:
                 st.sidebar.markdown("No tables found")
         
-    def create_ns_contents(self):                
+    def create_ns_contents(self, ns: str = None, tb : str = None, partition : str = None):                
         nsl = self.get_namespaces()        
-        self.create_filters(nsl)
+        self.create_filters(nsl, ns, tb, partition)
         
     @st.cache_data(ttl = '30m')
     def get_namespaces(_self, include_nested: bool = True):
@@ -81,8 +129,18 @@ class LakeView():
         for field in t.schema().fields:
             df2 = pd.DataFrame([[str(field.field_id), str(field.name), str(field.field_type), str(field.required), field.doc]], columns=["Field_id", "Field", "DataType", "Required", "Comments"])
             df = pd.concat([df, df2])
-        st.subheader(f'Namespace: :blue[_{ns}_]   Table: :blue[_{tb}_]', divider='orange')
         
+
+        #create shareable buttons
+        left, middle, right = st.columns([0.86,0.07,0.07])
+        left.subheader(f'Namespace: :blue[_{ns}_]   Table: :blue[_{tb}_]', divider='orange')
+        relative_path = f"?namespace={ns}&table={tb}" + f"&partition={partition}" if partition is not None else ""
+        middle.link_button(":rocket:",relative_path , help="Open current table view in a new tab")
+        url = st_javascript("await fetch('').then(r => window.parent.location.href)")
+        link_to_copy = f"{url}{relative_path}"
+        right.button(':link:', on_click=self.copy_to_clipboard, args=(link_to_copy,),help="Copy current table view direct link to clipboard")
+
+
         tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Partitions & Sample", "Table",  "Snapshots", "Refs", "Manifests", "Entries", "History"])
             
         with tab1:    
@@ -110,6 +168,8 @@ class LakeView():
                         #create partition select in sidebar
                         if len(pdf) > 0 and 'partition' in pdf:
                             options = pdf['partition'].tolist()
+                            if 'selected_partition' not in st.session_state and partition and partition in options:
+                                st.session_state['selected_partition'] = partition
                             index = None if 'selected_partition' not in st.session_state or st.session_state.selected_partition not in options else options.index(st.session_state.selected_partition)
                             st.sidebar.selectbox('Partition', options, index, key="selected_partition") 
 
@@ -245,14 +305,6 @@ class LakeView():
         df = pd.DataFrame({"Field": c1, "Name": c2, "Transform": c3})
         st.dataframe(df, hide_index = True, use_container_width=True)
     
-    def create_partition_link(self, row, namespace, table, limit):
-        if not 'partition' in row:
-            return row
-        part = row['partition']
-        res = f"""/?namespace={namespace}&table={table}&sample_limit={limit}&partition={part} """
-        row['partition'] = res
-        return row
-    
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -265,6 +317,9 @@ remote_css('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-a
 
 def main():
     lv = LakeView()
-    lv.create_ns_contents()
+    ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
+    tb = st.query_params['table'] if 'table' in st.query_params else None
+    partition = json.loads(st.query_params['partition'].replace("\'", "\"")) if 'partition' in st.query_params else None
+    lv.create_ns_contents(ns,tb, partition)
 
 main() 
