@@ -271,7 +271,7 @@ class LakeView():
                 else:
                     expression += f" and {key}=='{value}'"
             idx += 1
-        return expression
+        return expression if len(expression) > 0 else AlwaysTrue()
 
     def get_sort_order(self, so, t, container):
         c2, c3, c4, c5 = [], [], [], []
