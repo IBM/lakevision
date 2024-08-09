@@ -87,9 +87,9 @@ class LakeView():
 
                     #generate 
                     if 'selected_partition' in st.session_state:
-                        self.tables(ns=select_namespace,tb=select_table,partition=[st.session_state.selected_partition],limit=select_limit)
+                        self.tables(ns=select_namespace,tb=select_table,partition=st.session_state.selected_partition,limit=select_limit)
                     else:
-                        selected_partition = [partition] if partition is not None else []
+                        selected_partition = partition if partition is not None else None
                         self.tables(ns=select_namespace,tb=select_table,partition=selected_partition,limit=select_limit)
             else:
                 st.sidebar.markdown("No tables found")
@@ -122,8 +122,6 @@ class LakeView():
         return result
 
     def tables(self, ns, tb, partition, limit: int):
-        if len(partition) >0: 
-            partition = partition[0]
         t = self.catalog.load_table(f"{ns}.{tb}")
         df = pd.DataFrame(columns=["Field_id", "Field", "DataType", "Required", "Comments"])
         for field in t.schema().fields:
@@ -134,8 +132,10 @@ class LakeView():
         #create shareable buttons
         left, middle, right = st.columns([0.86,0.07,0.07])
         left.subheader(f'Namespace: :blue[_{ns}_]   Table: :blue[_{tb}_]', divider='orange')
-        relative_path = f"?namespace={ns}&table={tb}" + f"&partition={partition}" if partition is not None else ""
-        middle.link_button(":rocket:",relative_path , help="Open current table view in a new tab")
+        relative_path = f"?namespace={ns}&table={tb}"
+        if partition:
+            relative_path = f"{relative_path}&partition={partition}"
+        middle.link_button(":rocket:",f"/{relative_path}" , help="Open current table view in a new tab")
         url = st_javascript("await fetch('').then(r => window.parent.location.href)")
         link_to_copy = f"{url}{relative_path}"
         right.button(':link:', on_click=self.copy_to_clipboard, args=(link_to_copy,),help="Copy current table view direct link to clipboard")
