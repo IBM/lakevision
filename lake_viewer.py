@@ -77,7 +77,7 @@ class LakeView():
                 
                 #-- table
                 if select_table:
-                    select_limit = st.sidebar.selectbox('Samples',[50, 100, 200])
+                    select_limit = st.sidebar.number_input("Samples", min_value=50, max_value=1000, step=50)
 
                     #generate 
                     if 'selected_partition' in st.session_state:
@@ -90,7 +90,7 @@ class LakeView():
         
     def create_ns_contents(self, ns: str = None, tb : str = None, partition : str = None):                
         nsl = self.get_namespaces()        
-        self.create_filters(nsl, ns, tb, partition)
+        self.create_filters(namespaces = nsl, ns=ns, tb=tb, partition=partition)
         
     @st.cache_data(ttl = '30m')
     def get_namespaces(_self, include_nested: bool = True):
@@ -310,6 +310,6 @@ def main():
     ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
     tb = st.query_params['table'] if 'table' in st.query_params else None
     partition = json.loads(st.query_params['partition'].replace("\'", "\"")) if 'partition' in st.query_params else None
-    lv.create_ns_contents(ns,tb, partition)
+    lv.create_ns_contents(ns=ns,tb=tb, partition=partition)
 
 main() 
