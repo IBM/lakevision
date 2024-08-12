@@ -28,12 +28,11 @@ The easiest way is to run it with Docker.
 
 ## Roadmap
 
-1. Provide each partition details like name, filecount, number of records, file sizes etc.
-2. Provide ability to see sample data based on partitions.
-3. Add timetravel capability.
-4. Allow edit capabilities, like table properties changes.
-5. Allow ability to update table schema.
-6. Alter namespace and table names.... and much more.
+1. Provide each partition details like name, filecount, number of records, file sizes etc. - Done
+2. Provide ability to see sample data based on partitions. - Done
+3. Add insights on tables.
+4. Add timetravel capability.
+5. Much more.....
 
     
 ## Contributing
