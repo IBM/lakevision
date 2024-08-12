@@ -211,20 +211,26 @@ class LakeView():
         with tab3:
             st.markdown("**Current SnapshotId**")
             st.write(t.metadata.current_snapshot_id)
-            pdf = t.inspect.snapshots().sort_by([('committed_at', 'descending')]).to_pandas()
             st.markdown("**Snapshots**")
-            st.dataframe(pdf, use_container_width=True)
+            try:
+                pdf = t.inspect.snapshots().sort_by([('committed_at', 'descending')]).to_pandas()
+                st.dataframe(pdf, use_container_width=True)
+            except:
+                st.write("Not found")
 
         with tab4:
             st.markdown("**Refs**")
             self.get_refs(t.metadata.refs)
 
         with tab5:
-            pat = t.inspect.manifests()
-            if pat:
-                pdf = pat.to_pandas()
-                st.dataframe(pdf, use_container_width=True)
-            else:
+            try:
+                pat = t.inspect.manifests()
+                if pat:
+                    pdf = pat.to_pandas()
+                    st.dataframe(pdf, use_container_width=True)
+                else:
+                    st.write("No data")
+            except:
                 st.write("No data")
 
         with tab6:
