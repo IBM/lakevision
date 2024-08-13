@@ -1,9 +1,6 @@
 # LakeVision
 
-<<<<<<< HEAD
-=======
-[A](assets/demo.mp4)
->>>>>>> 1a039b0 (add video)
+[Demo](assets/demo.mp4)
 
 Lakevision is a tool which provides insights into your Data Lakehouse, based on Apache Iceberg table format.
 
