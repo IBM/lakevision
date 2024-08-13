@@ -12,14 +12,28 @@ import json
 import dotenv
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
 
+from streamlit_oauth import OAuth2Component
+import requests
+from datetime import datetime
+import pytz
+
+
+# Set environment variables
+OA_AUTHORIZE_URL = os.environ.get('OA_AUTHORIZE_URL')
+OA_TOKEN_URL = os.environ.get('OA_TOKEN_URL')
+OA_USERINFO_ENDPOINT = os.environ.get('OA_USERINFO_ENDPOINT')
+OA_CLIENT_ID = os.environ.get('OA_CLIENT_ID')
+OA_CLIENT_SECRET = os.environ.get('OA_CLIENT_SECRET')
+OA_REDIRECT_URI = os.environ.get('OA_REDIRECT_URI')
+OA_SCOPE = os.environ.get('OA_SCOPE')
 
 class LakeView():
 
-    def __init__(self):        
+    def __init__(self, token: str):        
         self.catalog = catalog.load_catalog("default", 
             **{
                 'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
-                'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
+                'token': token,
                 's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
                 'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
             })
@@ -44,6 +58,12 @@ class LakeView():
                 st.write("Invalid tablename")
         
     def create_filters(self, namespaces: list[str], ns: str = None, tb : str = None, partition : str = None):
+        st.sidebar.markdown(f'User: {st.session_state.user_info["name"]}')
+        user_timezone = pytz.timezone(st.session_state.get('timezone', 'UTC'))
+        localized_datetime= st.session_state.expires_at.astimezone(user_timezone)
+        formatted_datetime = localized_datetime.strftime('%Y-%m-%d %H:%M:%S %Z')
+        st.sidebar.write(f'Session expires at: {formatted_datetime}')
+
         st.sidebar.markdown( f' <b> :orange[Apache Iceberg Lakehouse ]', unsafe_allow_html=True)
         if st.sidebar.button("Go to Table"):
             self.search()
@@ -311,11 +331,28 @@ def remote_css(url):
 local_css("lv.css")
 remote_css('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css')
 
+def get_userinfo(access_token):
+    r2 = requests.get(f'{OA_USERINFO_ENDPOINT}?access_token={access_token}')
+    return r2.json()
+
 def main():
-    lv = LakeView()
-    ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
-    tb = st.query_params['table'] if 'table' in st.query_params else None
-    partition = json.loads(st.query_params['partition'].replace("\'", "\"")) if 'partition' in st.query_params else None
-    lv.create_ns_contents(ns=ns,tb=tb, partition=partition)
+    oauth2 = OAuth2Component(OA_CLIENT_ID, OA_CLIENT_SECRET, OA_AUTHORIZE_URL, OA_TOKEN_URL, "", "")
+    # Check if token exists in session state
+    if 'token' not in st.session_state:
+        # If not, show authorize button
+        result = oauth2.authorize_button("Login", OA_REDIRECT_URI, OA_SCOPE, extras_params={"response_type":"code"})
+        if result and 'token' in result:
+            # If authorization successful, save token in session state
+            st.session_state.token = result["token"]["id_token"]
+            st.session_state.expires_at = datetime.fromtimestamp(result["token"]["expires_at"])    
+            st.session_state.user_info = get_userinfo(result["token"]["access_token"])
+            st.rerun()    
+    else: 
+        token = st.session_state['token'] 
+        lv = LakeView(token)
+        ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
+        tb = st.query_params['table'] if 'table' in st.query_params else None
+        partition = json.loads(st.query_params['partition'].replace("\'", "\"")) if 'partition' in st.query_params else None
+        lv.create_ns_contents(ns=ns,tb=tb, partition=partition)
 
 main() 
