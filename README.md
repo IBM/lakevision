@@ -1,7 +1,6 @@
 # LakeVision
 
 
-
 Lakevision is a tool which provides insights into your Data Lakehouse, based on Apache Iceberg table format.
 
 It provides all the namespaces available in your Lakehouse as well as all the tables available in each namespace, the tables' properties and schema, snapshots, partitions, sort-orders, references/tags as well as sample data. It also supports nested namespaces.
