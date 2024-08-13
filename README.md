@@ -3,7 +3,8 @@
 
 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/8b3dfa66-6ee7-471d-a481-9ab0c55a58b0" width="400" />
+  <video autoplay loop muted src="https://github.com/user-attachments/assets/58966598-6349-4de9-a14c-cd7755470414" type="video/mp4"> 
+    </video>
 </div>
 
 
