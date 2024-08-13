@@ -1,8 +1,10 @@
 # LakeVision
 
-Lakevision is a tool which provides insights into your Data Lakehouse based on Apache Iceberg table format.
+[!(Demo)](assets/demo.webm)
 
-It provides all the namespaces available in your Lakehouse as well as all the tables available in each namespace, the tables' properties and schema, snapshots, partitions, sort-orders, references/tags as well as sample data.
+Lakevision is a tool which provides insights into your Data Lakehouse, based on Apache Iceberg table format.
+
+It provides all the namespaces available in your Lakehouse as well as all the tables available in each namespace, the tables' properties and schema, snapshots, partitions, sort-orders, references/tags as well as sample data. It also supports nested namespaces.
 
 This can be very helpful in finding data layout in your Apache Iceberg based Lakehouse, details, structure of each table, location of data and metadata files, change history, and a lot more. It heavily uses `pyiceberg` and has very few other dependencies.
 
@@ -26,6 +28,8 @@ The easiest way is to run it with Docker.
 
 4. The Lakevision application is built on Streamlit and it listens on port 8501. If everything built fine, you would see output on command line about the app listening on port 8501. Launch the browser http://localhost:8501 and you would see all the details of your Lakehouse.
 
+Tested in Linux and Mac with Iceberg REST catalog, but will support any catalog that works with pyiceberg.
+
 ## Roadmap
 
 1. Provide each partition details like name, filecount, number of records, file sizes etc. - Done
@@ -38,3 +42,6 @@ The easiest way is to run it with Docker.
 ## Contributing
 
 Contributions are very much welcome from all.
+
+
+[def]: /assets/demo.mp4
