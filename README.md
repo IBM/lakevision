@@ -1,6 +1,11 @@
 # LakeVision
 
-[Demo](assets/demo.mp4)
+
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/8b3dfa66-6ee7-471d-a481-9ab0c55a58b0" width="400" />
+</div>
+
 
 Lakevision is a tool which provides insights into your Data Lakehouse, based on Apache Iceberg table format.
 
