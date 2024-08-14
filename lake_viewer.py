@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from streamlit_javascript import st_javascript
 import pytz
 
-
+st.set_page_config(layout="wide")
 # Set environment variables
 OA_AUTHORIZE_URL = os.environ.get('OA_AUTHORIZE_URL')
 OA_TOKEN_URL = os.environ.get('OA_TOKEN_URL')
@@ -357,7 +357,7 @@ def main():
             st.session_state.expires_at = datetime.fromtimestamp(result["token"]["expires_at"])    
             st.session_state.user_info = get_userinfo(result["token"]["access_token"])
             st.rerun()    
-    else: 
+    else:         
         token = st.session_state['token'] 
         lv = LakeView(token)
         ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
