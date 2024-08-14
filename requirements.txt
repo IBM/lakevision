@@ -3,3 +3,5 @@ pandas>=2.0.0
 streamlit>=1.37.0
 python-dotenv
 streamlit-oauth
+requests
+streamlit-javascript

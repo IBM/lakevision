@@ -14,7 +14,8 @@ dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directo
 
 from streamlit_oauth import OAuth2Component
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+from streamlit_javascript import st_javascript
 import pytz
 
 
@@ -26,6 +27,8 @@ OA_CLIENT_ID = os.environ.get('OA_CLIENT_ID')
 OA_CLIENT_SECRET = os.environ.get('OA_CLIENT_SECRET')
 OA_REDIRECT_URI = os.environ.get('OA_REDIRECT_URI')
 OA_SCOPE = os.environ.get('OA_SCOPE')
+LABEL = os.environ.get("LABEL", 'Apache Iceberg Lakehouse')
+ENV_LABEL = os.environ.get("ENV_LABEL", '')
 
 class LakeView():
 
@@ -58,13 +61,20 @@ class LakeView():
                 st.write("Invalid tablename")
         
     def create_filters(self, namespaces: list[str], ns: str = None, tb : str = None, partition : str = None):
+        st.sidebar.markdown( f' <b> :orange[{LABEL}] {"" if ENV_LABEL == "" else "<b> <br> " + ENV_LABEL + "<br>"}', unsafe_allow_html=True)
         st.sidebar.markdown(f'User: {st.session_state.user_info["name"]}')
-        user_timezone = pytz.timezone(st.session_state.get('timezone', 'UTC'))
-        localized_datetime= st.session_state.expires_at.astimezone(user_timezone)
-        formatted_datetime = localized_datetime.strftime('%Y-%m-%d %H:%M:%S %Z')
-        st.sidebar.write(f'Session expires at: {formatted_datetime}')
+        user_timezone = st_javascript("""await (async () => {
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            return userTimezone
+            })().then(returnValue => returnValue)""")
+        try:
+            user_timezone = pytz.timezone(user_timezone)
+            localized_datetime= st.session_state.expires_at.astimezone(user_timezone)
+            formatted_datetime = localized_datetime.strftime('%Y-%m-%d %H:%M:%S')
+            st.sidebar.write(f'Session expires at: {formatted_datetime}')
+        except:
+            st.sidebar.write("Loading user timezone")
 
-        st.sidebar.markdown( f' <b> :orange[Apache Iceberg Lakehouse ]', unsafe_allow_html=True)
         if st.sidebar.button("Go to Table"):
             self.search()
 
