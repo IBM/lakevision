@@ -14,31 +14,41 @@ dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directo
 
 from streamlit_oauth import OAuth2Component
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from streamlit_javascript import st_javascript
 import pytz
 
 st.set_page_config(layout="wide")
 # Set environment variables
-OA_AUTHORIZE_URL = os.environ.get('OA_AUTHORIZE_URL')
-OA_TOKEN_URL = os.environ.get('OA_TOKEN_URL')
+CATALOG_URI = os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI")
+DEFAULT_TOKEN=os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN",'none')
+AWS_ENDPOINT = os.environ.get("AWS_ENDPOINT")
+
+OA_AUTHZ_ENDPOINT = os.environ.get('OA_AUTHZ_ENDPOINT')
+OA_TOKEN_ENDPOINT = os.environ.get('OA_TOKEN_ENDPOINT')
 OA_USERINFO_ENDPOINT = os.environ.get('OA_USERINFO_ENDPOINT')
 OA_CLIENT_ID = os.environ.get('OA_CLIENT_ID')
 OA_CLIENT_SECRET = os.environ.get('OA_CLIENT_SECRET')
 OA_REDIRECT_URI = os.environ.get('OA_REDIRECT_URI')
 OA_SCOPE = os.environ.get('OA_SCOPE')
+OA_ENABLED = os.environ.get('OA_ENABLED')
+
 LABEL = os.environ.get("LABEL", 'Apache Iceberg Lakehouse')
 ENV_LABEL = os.environ.get("ENV_LABEL", '')
+
+OTHER_ENV_LABEL = os.environ.get("OTHER_ENV_LABEL")
+OTHER_ENV_URL = os.environ.get("OTHER_ENV_URL")  
+
 
 class LakeView():
 
     def __init__(self, token: str):        
         self.catalog = catalog.load_catalog("default", 
             **{
-                'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
+                'uri': CATALOG_URI,
                 'token': token,
-                's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
-                'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
+                's3.endpoint':  AWS_ENDPOINT,
+                'py-io-impl':  'pyiceberg.io.fsspec.FsspecFileIO',
             })
         self.namespace_options = []
 
@@ -62,18 +72,19 @@ class LakeView():
         
     def create_filters(self, namespaces: list[str], ns: str = None, tb : str = None, partition : str = None):
         st.sidebar.markdown( f' <b> :orange[{LABEL}] {"" if ENV_LABEL == "" else "<b> <br> " + ENV_LABEL + "<br>"}', unsafe_allow_html=True)
-        st.sidebar.markdown(f'User: {st.session_state.user_info["name"]}')
-        user_timezone = st_javascript("""await (async () => {
-            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            return userTimezone
-            })().then(returnValue => returnValue)""")
-        try:
-            user_timezone = pytz.timezone(user_timezone)
-            localized_datetime= st.session_state.expires_at.astimezone(user_timezone)
-            formatted_datetime = localized_datetime.strftime('%Y-%m-%d %H:%M:%S')
-            st.sidebar.write(f'Session expires at: {formatted_datetime}')
-        except:
-            st.sidebar.write("Loading user timezone")
+        if 'user_info' in st.session_state:
+            st.sidebar.markdown(f'User: {st.session_state.user_info["name"]}')
+            user_timezone = st_javascript("""await (async () => {
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                return userTimezone
+                })().then(returnValue => returnValue)""")
+            try:
+                user_timezone = pytz.timezone(user_timezone)
+                localized_datetime= st.session_state.expires_at.astimezone(user_timezone)
+                formatted_datetime = localized_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                st.sidebar.write(f'Session expires at: {formatted_datetime}')
+            except:
+                st.sidebar.write("Loading user timezone")
 
         if st.sidebar.button("Go to Table"):
             self.search()
@@ -118,12 +129,15 @@ class LakeView():
             else:
                 st.sidebar.markdown("No tables found")
         
-    def create_ns_contents(self, ns: str = None, tb : str = None, partition : str = None):                
-        nsl = self.get_namespaces()        
+        if OTHER_ENV_LABEL and OTHER_ENV_URL:
+            st.sidebar.write( f''' <br /> <a href="{OTHER_ENV_URL}">:gray[{OTHER_ENV_LABEL}]</a> ''', unsafe_allow_html=True)
+
+    def create_ns_contents(self, cache_name: str = None, ns: str = None, tb : str = None, partition : str = None):                
+        nsl = self.get_namespaces(cache_name=cache_name)        
         self.create_filters(namespaces = nsl, ns=ns, tb=tb, partition=partition)
         
     @st.cache_data(ttl = '30m')
-    def get_namespaces(_self, include_nested: bool = True):
+    def get_namespaces(_self, cache_name: str, include_nested: bool = True):
         result = []
         namespaces = _self.catalog.list_namespaces()
         for ns in namespaces:
@@ -346,23 +360,41 @@ def get_userinfo(access_token):
     return r2.json()
 
 def main():
-    oauth2 = OAuth2Component(OA_CLIENT_ID, OA_CLIENT_SECRET, OA_AUTHORIZE_URL, OA_TOKEN_URL, "", "")
-    # Check if token exists in session state
-    if 'token' not in st.session_state:
-        # If not, show authorize button
-        result = oauth2.authorize_button("Login", OA_REDIRECT_URI, OA_SCOPE, extras_params={"response_type":"code"})
-        if result and 'token' in result:
-            # If authorization successful, save token in session state
-            st.session_state.token = result["token"]["id_token"]
-            st.session_state.expires_at = datetime.fromtimestamp(result["token"]["expires_at"])    
-            st.session_state.user_info = get_userinfo(result["token"]["access_token"])
-            st.rerun()    
-    else:         
-        token = st.session_state['token'] 
+    if OA_ENABLED == 'TRUE':
+        need_login = True
+    else:
+        need_login = False
+    
+    token = ''
+    cache_name = 'dummy'
+    
+    if need_login: 
+        oauth2 = OAuth2Component(OA_CLIENT_ID, OA_CLIENT_SECRET, OA_AUTHZ_ENDPOINT, OA_TOKEN_ENDPOINT, "", "")
+        # Check if token exists in session state
+        if 'token' not in st.session_state:
+            # If not, show authorize button
+            result = oauth2.authorize_button("Login", OA_REDIRECT_URI, OA_SCOPE, extras_params={"response_type":"code"})
+            if result and 'token' in result:
+                # If authorization successful, save token in session state
+                st.session_state.token = result["token"]["id_token"]
+                st.session_state.expires_at = datetime.fromtimestamp(result["token"]["expires_at"])   
+                st.session_state.user_info = get_userinfo(result["token"]["access_token"])
+                st.rerun()    
+        else: 
+            if st.session_state.expires_at < datetime.now():
+                st.session_state.clear()
+                st.rerun()
+            else:  
+                token = st.session_state['token']
+                cache_name = st.session_state.user_info["email"]
+    else:
+        token = DEFAULT_TOKEN
+
+    if len(token) > 0:    
         lv = LakeView(token)
         ns = st.query_params['namespace'] if 'namespace' in st.query_params else None
         tb = st.query_params['table'] if 'table' in st.query_params else None
         partition = json.loads(st.query_params['partition'].replace("\'", "\"")) if 'partition' in st.query_params else None
-        lv.create_ns_contents(ns=ns,tb=tb, partition=partition)
+        lv.create_ns_contents(cache_name=cache_name, ns=ns, tb=tb, partition=partition)
 
 main() 
