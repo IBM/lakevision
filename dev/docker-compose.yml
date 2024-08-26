@@ -76,7 +76,7 @@ services:
     depends_on:
       - minio
       - rest
-    image: dataloader
+    image: localhost/dataloader
     container_name: lakevision-dl
     build: .
     networks:
