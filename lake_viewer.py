@@ -10,8 +10,9 @@ import pyarrow.ipc as ipc
 from streamlit.components.v1 import html
 import json
 import dotenv
+from table_tabs.ingestion_statistics import show_ingestion_patterns
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
-
+print(os.environ)
 
 class LakeView():
 
@@ -131,7 +132,7 @@ class LakeView():
             relative_path = f"{relative_path}&partition={partition}"
         right.link_button(":rocket:",f"/{relative_path}" , help="Open current table view in a new tab")
 
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Partitions & Sample", "Table",  "Snapshots", "Refs", "Manifests", "Entries", "History"])
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["Partitions & Sample", "Table",  "Snapshots", "Refs", "Manifests", "Entries", "History", "Ingestion Patterns"])
             
         with tab1:    
             st.markdown("**PartitionSpec**")
@@ -246,6 +247,9 @@ class LakeView():
         with tab7:
             pdf = t.inspect.history().to_pandas()
             st.dataframe(pdf, use_container_width=True)
+
+        with tab8:
+            show_ingestion_patterns(t)
 
     def get_row_filter(self, partition, table):
         if partition is None or len(partition) == 0:
