@@ -22,6 +22,7 @@ class LakeView():
                 'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
                 's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
                 'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
+                'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),                
             })
         self.namespace_options = []
 
