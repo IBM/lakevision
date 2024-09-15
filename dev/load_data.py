@@ -45,6 +45,8 @@ class DataLoader:
             )
             self.logger.info("Appending data to table")
             self.catalog.load_table(table_name).append(df)
+            # appending 2 times to get multiple snapshots
+            self.catalog.load_table(table_name).append(df)
         else:
             self.logger.info(f"Table {table_name} already exists")
 
