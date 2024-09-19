@@ -21,7 +21,7 @@ class LakeView():
             case "GCP":
                 service_account_file = os.environ.get("GCP_KEYFILE")
                 scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-                access_token = get_access_token(service_account_file, scopes)                        
+                access_token = get_gcp_access_token(service_account_file, scopes)                        
                 self.catalog = catalog.load_catalog("default", 
                     **{
                         'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
@@ -29,9 +29,9 @@ class LakeView():
                         'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),
                         "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
                         "gcs.oauth2.token-expires-at": time.mktime(access_token.expiry.timetuple()) * 1000,
-                        "gcs.project-id": os.environ.get("GCP_PROJECT_ID"), 
+                        "gcs.project-id": os.environ.get("PYICEBERG_CATALOG__GCS__PROJECT_ID"), 
                         "gcs.oauth2.token": access_token.token,
-                        "gcs.default-bucket-location": os.environ.get("GCP_DEFAULT_BUCKET_LOCATION"),            
+                        "gcs.default-bucket-location": os.environ.get("PYICEBERG_CATALOG__GCS__DEFAULT_BUCKET_LOCATION"),            
                     })
             case _: 
                 self.catalog = catalog.load_catalog("default", 
