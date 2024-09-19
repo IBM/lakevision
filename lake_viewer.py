@@ -15,15 +15,33 @@ dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directo
 
 class LakeView():
 
-    def __init__(self):        
-        self.catalog = catalog.load_catalog("default", 
-            **{
-                'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
-                'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
-                's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
-                'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
-                'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),                
-            })
+    def __init__(self):
+        storage_location = os.environ.get("ICEBERG_STORAGE_LOCATION")
+        match location:
+            case "GCP":
+                service_account_file = os.environ.get("GCP_KEYFILE")
+                scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+                access_token = get_access_token(service_account_file, scopes)                        
+                self.catalog = catalog.load_catalog("default", 
+                    **{
+                        'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
+                        'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
+                        'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),
+                        "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
+                        "gcs.oauth2.token-expires-at": time.mktime(access_token.expiry.timetuple()) * 1000,
+                        "gcs.project-id": os.environ.get("GCP_PROJECT_ID"), 
+                        "gcs.oauth2.token": access_token.token,
+                        "gcs.default-bucket-location": os.environ.get("GCP_DEFAULT_BUCKET_LOCATION"),            
+                    })
+            case _: 
+                self.catalog = catalog.load_catalog("default", 
+                    **{
+                        'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
+                        'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
+                        's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
+                        'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
+                        'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),                
+                    })
         self.namespace_options = []
 
     @st.dialog("Go to Table")
