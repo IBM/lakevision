@@ -10,29 +10,26 @@ import pyarrow.ipc as ipc
 from streamlit.components.v1 import html
 import json
 import dotenv
+import time
+import google.auth
+from google.auth.transport.requests import Request
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
 
 
 class LakeView():
 
     def __init__(self):
-        storage_location = os.environ.get("ICEBERG_STORAGE_LOCATION")
-        match location:
-            case "GCP":
-                service_account_file = os.environ.get("GCP_KEYFILE")
+        service_account_file = os.environ.get("GCP_KEYFILE")
+        if service_account_file != "":
                 scopes = ["https://www.googleapis.com/auth/cloud-platform"]
                 access_token = get_gcp_access_token(service_account_file, scopes)                        
                 self.catalog = catalog.load_catalog("default", 
                     **{
-                        "py-io-impl": "pyiceberg.io.pyarrow.PyArrowFileIO",
                         "gcs.oauth2.token-expires-at": time.mktime(access_token.expiry.timetuple()) * 1000,
                         "gcs.oauth2.token": access_token.token,        
                     })
-            case _: 
-                self.catalog = catalog.load_catalog("default", 
-                    **{
-                        'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
-                    })
+        else:
+                self.catalog = catalog.load_catalog("default")
         self.namespace_options = []
 
     @st.dialog("Go to Table")
@@ -328,7 +325,6 @@ def get_gcp_access_token(service_account_file, scopes):
 
   request = Request()
   credentials.refresh(request)  # Forces token refresh if needed
-  print(credentials)
   return credentials
 
 def local_css(file_name):
