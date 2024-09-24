@@ -10,20 +10,26 @@ import pyarrow.ipc as ipc
 from streamlit.components.v1 import html
 import json
 import dotenv
+import time
+import google.auth
+from google.auth.transport.requests import Request
 dotenv.load_dotenv(dotenv.find_dotenv(usecwd=True)) #Use current working directory to load .env file
 
 
 class LakeView():
 
-    def __init__(self):        
-        self.catalog = catalog.load_catalog("default", 
-            **{
-                'uri': os.environ.get("PYICEBERG_CATALOG__DEFAULT__URI"),
-                'token': os.environ.get("PYICEBERG_CATALOG__DEFAULT__TOKEN"),
-                's3.endpoint':  os.environ.get("AWS_ENDPOINT"),
-                'py-io-impl':   'pyiceberg.io.fsspec.FsspecFileIO',
-                'warehouse': os.environ.get("PYICEBERG_CATALOG__DEFAULT__WAREHOUSE"),                
-            })
+    def __init__(self):
+        service_account_file = os.environ.get("GCP_KEYFILE")
+        if service_account_file != "":
+                scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+                access_token = get_gcp_access_token(service_account_file, scopes)                        
+                self.catalog = catalog.load_catalog("default", 
+                    **{
+                        "gcs.oauth2.token-expires-at": time.mktime(access_token.expiry.timetuple()) * 1000,
+                        "gcs.oauth2.token": access_token.token,        
+                    })
+        else:
+                self.catalog = catalog.load_catalog("default")
         self.namespace_options = []
 
     @st.dialog("Go to Table")
@@ -301,7 +307,26 @@ class LakeView():
             c3.append(str(f.transform))
         df = pd.DataFrame({"Field": c1, "Name": c2, "Transform": c3})
         st.dataframe(df, hide_index = True, use_container_width=True)
-    
+
+def get_gcp_access_token(service_account_file, scopes):
+  """
+  Retrieves an access token from Google Cloud Platform using service account credentials.
+
+  Args:
+      service_account_file: Path to the service account JSON key file.
+      scopes: List of OAuth scopes required for your application.
+
+  Returns:
+      The access token as a string.
+  """
+
+  credentials, name = google.auth.load_credentials_from_file(
+      service_account_file, scopes=scopes)
+
+  request = Request()
+  credentials.refresh(request)  # Forces token refresh if needed
+  return credentials
+
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
