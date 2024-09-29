@@ -14,7 +14,16 @@
 	import { selectedNamespce } from '$lib/stores';
 	import { selectedTable } from '$lib/stores';
 	//import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { NameSpace } from 'carbon-icons-svelte';
 
+	let dropdown1_selectedId = '';
+	let dropdown2_selectedId = '';
+	
+  	// Extract query parameters
+  	let q_ns = $page.url.searchParams.get('namespace');
+  	let q_tab = $page.url.searchParams.get('table');
+	
 	export let data;
 	let isSideNavOpen = false;
 	
@@ -59,13 +68,17 @@
 		return item.text.toLowerCase().includes(value.toLowerCase());
 	}
 
-	let dropdown1_selectedId = '';
-	let dropdown2_selectedId = '';
-
 	const formatSelected = (id, items) => items.find((item) => item.id === id)?.text ?? '';
 
 	$: ns = get_tables(formatSelected(dropdown1_selectedId, data.namespaces));
 	$: selectedTable.set(formatSelected(dropdown2_selectedId, tables));
+
+	if(q_ns){
+		console.log(q_ns);						
+	}
+	if(q_tab){
+		console.log(q_tab)						
+	}
 </script>
 
 <Header company="Apache Iceberg" platformName="Lakevision" bind:isSideNavOpen>
@@ -85,7 +98,7 @@
 		<br />
 		<ComboBox
 			titleText="Namespace"
-			items={data.namespaces}
+			items={data.namespaces}						
 			bind:selectedId={dropdown1_selectedId}
 			{shouldFilterItem}
 		/>

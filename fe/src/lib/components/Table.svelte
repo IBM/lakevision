@@ -7,10 +7,13 @@
 	import Misuse from "carbon-icons-svelte/lib/Misuse.svelte";
 
 	import { onMount } from 'svelte';
+	import Modal from './Modal.svelte';
+	
 	/**
 	 * @type {any[]}
 	 */
-	 export let fetched_data;
+	export let table_title;
+	export let fetched_data;
 	export let loading;
 	let error = '';
 	/**
@@ -67,11 +70,10 @@
 	 */
 	function handleDoubleClick(event, content) {
 		popoverContent = content;
-		popoverPosition = { top: event.clientY, left: event.clientX };
 		showPopover = true;
 	}
 
-	function closePopover() {
+	function handleModelClosed(event){
 		showPopover = false;
 	}
 </script>
@@ -101,8 +103,12 @@
 		{:else if error}
 			<p>Error: {error}</p>
 		{:else if fetched_data && fetched_data[0]}
-			{#if isFullScreen}
-				<div class="bx--toolbar-content">
+			{#if isFullScreen}				
+				<p class="bx--table-header" align="center" >
+					<br/>
+					<strong>{table_title}</strong>
+				</p>
+				<div class="bx--toolbar-content">					
 					<button class="bx--btn" on:click={toggleFullScreen}>
 						{#if isFullScreen}<Minimize size={20} />{:else}<Maximize size={16} />{/if}
 					</button>
@@ -171,19 +177,8 @@
 </div>
 <!-- Popover Component -->
 {#if showPopover}
-	<div
-		aria-hidden="true"
-		class="popover"
-		style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;"
-		on:click={closePopover}
-	>
-		<div role="button" class="popover-content">
-			<div aria-hidden="true" class="bx--btn" on:click={closePopover} style="fixed: left;"><Misuse size={20}/></div>			
-			<div class="popover-text">
-				{popoverContent}
-			</div>
-		</div>
-	</div>
+	<Modal showModal=bind:showPopover on:modelClosed={handleModelClosed} > <pre> {popoverContent} </pre> </Modal>
+	
 {/if}
 
 <style>
@@ -220,29 +215,6 @@
 
 	.bx--btn {
 		margin-bottom: 1rem;
-	}
-
-	/* Popover Styling */
-	.popover {
-		position: absolute;
-		z-index: 1100;
-		background-color: white;
-		border: 1px solid #0d060661;
-		border-radius: 8px;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-		padding: 1rem;
-		max-width: 600px;
-		overflow: hidden;
-	}
-
-	.popover-content {
-		max-height: 200px; /* Set max height for scrolling */
-		overflow-y: auto;
-	}
-
-	.popover-text {
-		white-space: pre-wrap;
-		word-wrap: break-word;
 	}
 
 	.table-wrapper {
