@@ -1,19 +1,21 @@
-FROM python:3.11-slim
+FROM lakevision-base:latest
+ENV PYTHONUNBUFFERED=1
+WORKDIR /be
+COPY ./be/requirements.txt /be/
+COPY ./be/app /be/app
+RUN pip install --no-cache-dir --upgrade -r /be/requirements.txt
 
-WORKDIR /app
+#USER lv
+WORKDIR /fe
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    software-properties-common \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+COPY ./fe/ .
+COPY start.sh /
+RUN chmod 755 /start.sh
+RUN rm package-lock.json && rm -r node_modules
+RUN npm install --package-lock-only
+RUN npm ci
+RUN npm install
 
-COPY *.py /app/
-COPY *.css /app/
-COPY requirements.txt /app/
-RUN pip3 install -r requirements.txt
-
-EXPOSE 8501
-
-ENTRYPOINT ["streamlit", "run", "lake_viewer.py", "--server.port=8501", "--server.address=0.0.0.0"]
+EXPOSE 5173 8000
+ENV HOST=0.0.0.0
+CMD [/start.sh]
