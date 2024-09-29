@@ -1,4 +1,6 @@
 pyiceberg[s3fs]>=0.7
+pyiceberg[gcsfs]>=0.7
+google.auth>=2.34.0
 pandas>=2.0.0
 streamlit>=1.37.0
 python-dotenv
