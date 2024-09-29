@@ -1,2 +1,3 @@
 .env
 dev/warehouse
+.DS_Store

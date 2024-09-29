@@ -1,31 +1,29 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Union
 from lakeviewer import LakeView
 
 app = FastAPI()
 lv = LakeView()
-namespaces = lv.get_namespaces()
-origins = [
-    "http://localhost",
-    "http://localhost:5173",
-]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins="*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+namespaces = lv.get_namespaces()
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
-
 @app.get("/namespaces")
-def read_namespaces():    
+def read_namespaces(refresh=False):    
     ret = []
+    global namespaces
+    if refresh or len(namespaces)==0:
+        namespaces = lv.get_namespaces()
     for idx, ns in enumerate(namespaces):
         ret.append({"id": idx, "text": ".".join(ns)})        
     return ret
@@ -41,6 +39,23 @@ def read_table_partitions(table_id: str = None):
 @app.get("/tables/{table_id}/sample")    
 def read_sample_data(table_id: str, partition=None, limit=100):
     return lv.get_sample_data(table_id, partition, limit)
+
+@app.get("/tables/{table_id}/schema")    
+def read_schema_data(table_id: str):
+    return lv.get_schema(table_id)
+
+@app.get("/tables/{table_id}/summary")    
+def read_summary_data(table_id: str):
+    return lv.get_summary(table_id)
+
+@app.get("/tables/{table_id}/properties")    
+def read_properties_data(table_id: str):
+    return lv.get_properties(table_id)
+
+@app.get("/tables/{table_id}/partition-specs")    
+def read_partition_specs(table_id: str):
+    return lv.get_partition_specs(table_id)
+
 
 @app.get("/tables")
 def read_tables(namespace: str = None):    

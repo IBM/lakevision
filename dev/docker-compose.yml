@@ -1,10 +1,12 @@
 version: "3"
 
 services:
-  lakevision:
-    image: localhost/lakevision
-    container_name: lakevision
-    build: ../
+  lakevision-be:
+    image: localhost/lakevision-be
+    container_name: lakevision-be
+    build:
+      context: ../be
+      dockerfile: Dockerfile.be
     networks:
       iceberg_net:
     depends_on:
@@ -12,6 +14,7 @@ services:
       - minio
     volumes:
       - ./warehouse:/warehouse
+      - ../be:/be
     environment:
       - PYICEBERG_CATALOG__DEFAULT__URI=http://rest:8181
       - PYICEBERG_CATALOG__DEFAULT__S3__ENDPOINT=http://minio:9000
@@ -21,10 +24,27 @@ services:
       - AWS_SECRET_ACCESS_KEY=password
       - AWS_REGION=us-east-1
     ports:
-      - 8501:8501
+      - 8000:8000
     links:
       - rest:rest
       - minio:minio
+  lakevision-fe:
+    image: localhost/lakevision-fe
+    container_name: lakevision-fe
+    build:
+      context: ../fe
+      dockerfile: Dockerfile.fe
+    networks:
+      iceberg_net:
+    volumes:
+      - ../fe/src:/fe/src
+    environment:
+      - PUBLIC_API_SERVER=http://localhost:8000
+      - PUBLIC_API_SERVER_SERVER_SIDE=http://lakevision-be:8000
+      - PORT=5173
+    ports:
+      - 5173:5173
+    command: npm run dev -- --host
   rest:
     image: tabulario/iceberg-rest
     container_name: pyiceberg-rest
@@ -74,6 +94,7 @@ services:
       "
   loader:
     depends_on:
+      - lakevision-be
       - minio
       - rest
     image: localhost/dataloader
@@ -92,5 +113,6 @@ services:
       - AWS_REGION=us-east-1
     entrypoint: >
       python /load_data.py
+
 networks:
   iceberg_net:
