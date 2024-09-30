@@ -2,17 +2,29 @@ from pyiceberg import catalog
 from pyiceberg.catalog import Identifier
 from pyiceberg.expressions import AlwaysTrue
 from typing import List, Union
-import json
+import json, os, time
 import pandas as pd
 import pyarrow as pa
 import numpy as np
+import dotenv
+import google.auth
+from google.auth.transport.requests import Request
 
 class LakeView():
     
     def __init__(self):        
-        self.catalog = catalog.load_catalog("default")
-        self.namespace_options = []
-        self.encoder = BinaryEncoder()
+        service_account_file = os.environ.get("GCP_KEYFILE")
+        if service_account_file and service_account_file != "":
+            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+            access_token = get_gcp_access_token(service_account_file, scopes)                        
+            self.catalog = catalog.load_catalog("default", 
+                **{
+                    "gcs.oauth2.token-expires-at": time.mktime(access_token.expiry.timetuple()) * 1000,
+                    "gcs.oauth2.token": access_token.token,        
+                })
+        else:
+            self.catalog = catalog.load_catalog("default")
+        self.namespace_options = []        
 
     def get_namespaces(_self, include_nested: bool = True):
         result = []
@@ -153,6 +165,24 @@ class LakeView():
         else:            
             data = paTable.to_pandas().to_json(orient='records', default_handler = BinaryEncoder)
             return data
+        
+def get_gcp_access_token(service_account_file, scopes):
+    """
+    Retrieves an access token from Google Cloud Platform using service account credentials.
+
+    Args:
+        service_account_file: Path to the service account JSON key file.
+        scopes: List of OAuth scopes required for your application.
+
+    Returns:
+        The access token as a string.
+    """
+    credentials, name = google.auth.load_credentials_from_file(
+        service_account_file, scopes=scopes)
+
+    request = Request()
+    credentials.refresh(request)  # Forces token refresh if needed
+    return credentials
 
 class BinaryEncoder(json.JSONEncoder):
     def default(self, obj):
