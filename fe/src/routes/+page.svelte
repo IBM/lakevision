@@ -113,14 +113,17 @@
         }        
     })();
     onMount(() => {	
+        set_copy_url();
+    })
+    
+    function set_copy_url(){
         url = window.location.origin;
         url = url+"/?namespace="+namespace+"&table="+table;
-        console.log(url);        
-    })
+    }
 </script>
 
 <Content>    
-    <Tile><h4>Namespace: {namespace} </h4> <p align="right"> <CopyButton text={url} feedback="Table link copied" /></p>
+    <Tile><h4>Namespace: {namespace} </h4> <p align="right"> <CopyButton text={url} on:click={set_copy_url} iconDescription="Copy table link" feedback="Table link copied" /></p>
         <h4>Table:     {table}</h4>
     </Tile>    
   
