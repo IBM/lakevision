@@ -112,10 +112,7 @@
             sample_data_loading = false;  
         }        
     })();
-    onMount(() => {	
-        set_copy_url();
-    })
-    
+ 
     function set_copy_url(){
         url = window.location.origin;
         url = url+"/?namespace="+namespace+"&table="+table;
