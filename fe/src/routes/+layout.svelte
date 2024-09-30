@@ -13,9 +13,8 @@
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
 	import { selectedTable } from '$lib/stores';
-	//import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { NameSpace } from 'carbon-icons-svelte';
 
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
@@ -32,6 +31,7 @@
 	 */
 	let tables = [];
 	let loading = false;
+	const tableLoadedEvent = new EventTarget();
 
 	/**
 	 * @param {null} namespace
@@ -60,7 +60,16 @@
 			}
 		} finally {
 			loading = false; // Stop loading indicator
+			tableLoadedEvent.dispatchEvent(new Event("tablesLoaded"));
 		}
+	}
+
+	function waitForTables() {
+		return new Promise((resolve) => {
+			tableLoadedEvent.addEventListener("tablesLoaded", () => {
+			resolve(tables); // Resolve when the event is triggered
+			});
+		});
 	}
 
 	function shouldFilterItem(item, value) {
@@ -70,15 +79,40 @@
 
 	const formatSelected = (id, items) => items.find((item) => item.id === id)?.text ?? '';
 
+	function findItemIdByText(items, text) {
+		const item = items.find(item => item.text === text);
+		return item ? item.id : null;
+	}
+
+	function resetQueryParams() {
+		const url = window.location.origin + window.location.pathname;	
+		window.history.replaceState(null, '', url);
+	}
+
 	$: ns = get_tables(formatSelected(dropdown1_selectedId, data.namespaces));
 	$: selectedTable.set(formatSelected(dropdown2_selectedId, tables));
 
 	if(q_ns){
-		console.log(q_ns);						
+			console.log(q_ns);			
+			const id = findItemIdByText(data.namespaces, q_ns);
+			console.log(id);
+			dropdown1_selectedId = id;				
 	}
-	if(q_tab){
-		console.log(q_tab)						
-	}
+
+	onMount(() => {		
+		if(q_tab){
+			waitForTables().then((result) => {
+				console.log("The value is available:", result); 
+				const id = findItemIdByText(tables, q_tab);			
+				console.log(id);		
+				dropdown2_selectedId = id;	
+				resetQueryParams();
+			});
+		}		
+  	});
+
+	
+
 </script>
 
 <Header company="Apache Iceberg" platformName="Lakevision" bind:isSideNavOpen>
@@ -101,7 +135,12 @@
 			items={data.namespaces}						
 			bind:selectedId={dropdown1_selectedId}
 			{shouldFilterItem}
-		/>
+			let:item
+		>
+		<div>
+			<strong>{item.text}</strong>
+		</div>		
+	</ComboBox>
 
 		<br /> <br /><br /> <br /><br /> <br />
 
@@ -111,7 +150,12 @@
 			items={tables}
 			bind:selectedId={dropdown2_selectedId}
 			{shouldFilterItem}
-		/>
+			let:item
+			>
+			<div>
+				<strong>{item.text}</strong>
+			</div>		
+		</ComboBox>
 	</SideNavItems>
 </SideNav>
 
@@ -135,4 +179,5 @@
   :global(.bx--side-nav__link .bx--side-nav__icon svg) {
     fill: #fff; 
   }
+ 
 </style>

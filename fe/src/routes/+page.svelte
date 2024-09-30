@@ -1,15 +1,17 @@
 
 <script>
-    import { env } from '$env/dynamic/public';
-    import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column } from "carbon-components-svelte";
+    import { env } from '$env/dynamic/public';    
+    import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
+    import { onMount } from 'svelte';
     import Table from '../lib/components/Table.svelte';
     import JsonTable from '../lib/components/JsonTable.svelte';
 
     let namespace;
     let table;
     let error = "";
+    let url = "";
     $: {
         selectedNamespce.subscribe(value => {namespace = value; });
         selectedTable.subscribe(value => {table = value; });
@@ -52,11 +54,11 @@
         }  
     }            
     
-    $: (async () => {
+    $: (async () => {        
         try {
             summary_loading = true;          
             summary = await get_data(namespace+"."+table, "summary");  
-            summary_loading = false;  
+            summary_loading = false;              
         } catch (err) {
             error = err.message; 
             summary_loading = false;  
@@ -110,12 +112,18 @@
             sample_data_loading = false;  
         }        
     })();
- 
+    onMount(() => {	
+        url = window.location.origin;
+        url = url+"/?namespace="+namespace+"&table="+table;
+        console.log(url);        
+    })
 </script>
 
-<Content>
-    <Tile><h4>Namespace: {namespace}</h4></Tile>
-    <Tile><h4>Table:     {table}</h4></Tile>
+<Content>    
+    <Tile><h4>Namespace: {namespace} </h4> <p align="right"> <CopyButton text={url} feedback="Table link copied" /></p>
+        <h4>Table:     {table}</h4>
+    </Tile>    
+  
     <br />
     <Tabs>
         <Tab label="Summary" />
@@ -130,7 +138,7 @@
                         
                         <br />
                         Summary
-                        <br />
+                        <br />                        
                         <br />
                         {#if !summary_loading && summary}
                             <JsonTable jsonData={summary}></JsonTable>                                                     
