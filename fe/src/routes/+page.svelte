@@ -141,7 +141,7 @@
                         <br />                        
                         <br />
                         {#if !summary_loading && summary}
-                            <JsonTable jsonData={summary}></JsonTable>                                                     
+                            <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                     
                         {/if}
                         <br />
                         <br />
@@ -149,7 +149,7 @@
                         <br />
                         <br />
                         {#if !properties_loading && properties}
-                            <JsonTable jsonData={properties}></JsonTable>                                                     
+                            <JsonTable jsonData={properties} orient = "kv"></JsonTable>                                                     
                         {/if}
                      </Column>
                       <Column aspectRatio="2x1">
@@ -158,6 +158,12 @@
                         <br />
                         <br />
                         <Table fetched_data={schema} loading={schema_loading} table_title={namespace}.{table}/>
+                        <br />
+                        Partition Specs
+                        <br />  <br />                        
+                        {#if !partition_specs_loading && partition_specs}
+                            <JsonTable jsonData={partition_specs} orient="table" /> 
+                        {/if}
                         </Column>
                     </Row>
                   </Grid>
