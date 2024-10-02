@@ -1,24 +1,44 @@
 <script>
     // Accept JSON data as a prop
     export let jsonData = {};
+    export let orient = "";
   </script>
   
   <!-- Display the key-value pairs in a table -->
   <table>
-    <thead>
-      <tr>
-        <th></th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each Object.entries(jsonData) as [key, value]}
-        <tr>
-          <td>{key}</td>
-          <td>{value}</td>
+      {#if orient == 'kv'}
+        <thead>
+          <tr>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each Object.entries(jsonData) as [key, value]}
+            <tr>
+              <td>{key}</td>
+              <td>{value}</td>
+            </tr>
+          {/each}
+        </tbody>
+      {:else if orient == 'table'}            
+        {#each jsonData as row}        
+        <thead>        
+          <tr>
+            {#each Object.keys(row) as key}
+              <th>{key}</th>
+            {/each}
+          </tr>          
+        </thead>
+      <tbody>
+        <tr>          
+          {#each Object.values(row) as value}
+            <td>{value}</td>
+          {/each}
         </tr>
-      {/each}
-    </tbody>
+      </tbody>
+        {/each}            
+      {/if}    
   </table>
   
   <style>
