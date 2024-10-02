@@ -22,22 +22,22 @@
           {/each}
         </tbody>
       {:else if orient == 'table'}            
-        {#each jsonData as row}        
-        <thead>        
-          <tr>
-            {#each Object.keys(row) as key}
-              <th>{key}</th>
-            {/each}
-          </tr>          
-        </thead>
-      <tbody>
-        <tr>          
-          {#each Object.values(row) as value}
-            <td>{value}</td>
+      <thead>
+        <tr>
+          {#each Object.keys(jsonData[0]) as key}
+            <th>{key}</th>
           {/each}
         </tr>
-      </tbody>
-        {/each}            
+      </thead>
+      {#each jsonData as row}                
+        <tbody>
+          <tr>          
+            {#each Object.values(row) as value}
+              <td>{value}</td>
+            {/each}
+          </tr>
+        </tbody>
+      {/each}            
       {/if}    
   </table>
   
