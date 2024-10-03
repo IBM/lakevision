@@ -11,7 +11,7 @@ RUN chmod 755 /start.sh
 WORKDIR /fe
 COPY ./fe/ .
 
-RUN rm package-lock.json && rm -r node_modules
+RUN rm -f package-lock.json && rm -rf node_modules
 RUN npm install --package-lock-only
 RUN npm ci
 RUN npm install
