@@ -6,6 +6,12 @@ It provides all the namespaces available in your Lakehouse as well as all the ta
 
 This can be very helpful in finding data layout in your Apache Iceberg based Lakehouse, details, structure of each table, location of data and metadata files, change history, and a lot more. It heavily uses pyiceberg and has very few other dependencies.
 
+
+
+https://github.com/user-attachments/assets/7c71d61f-ffea-497a-97d0-451dec662b96
+
+
+
 ## How to install and use:
 
 The easiest way is to run it with Docker.
