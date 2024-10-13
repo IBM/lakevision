@@ -56,6 +56,9 @@ def read_properties_data(table_id: str):
 def read_partition_specs(table_id: str):
     return lv.get_partition_specs(table_id)
 
+@app.get("/tables/{table_id}/data-change")    
+def read_data_change(table_id: str):
+    return lv.get_data_change(table_id)
 
 @app.get("/tables")
 def read_tables(namespace: str = None):    
