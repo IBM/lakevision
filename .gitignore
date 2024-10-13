@@ -1,3 +1,4 @@
 .env
 dev/warehouse
 .DS_Store
+be/app/__pycache__

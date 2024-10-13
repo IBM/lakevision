@@ -5,8 +5,8 @@ from typing import List, Union
 import json, os, time
 import pandas as pd
 import pyarrow as pa
+import daft
 import numpy as np
-import dotenv
 import google.auth
 from google.auth.transport.requests import Request
 
@@ -72,10 +72,20 @@ class LakeView():
         df['committed_at'] = df['committed_at'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         cols = df.to_json(orient='records')          
         return cols
+    
+    def get_data_change(self, table_id):        
+        table = self.catalog.load_table(table_id)
+        pa_snaps = table.inspect.snapshots().sort_by([('committed_at', 'ascending')])
+        pa_snaps = pa_snaps.drop(['snapshot_id', 'parent_id', 'operation', 'manifest_list'])
+        df = pa_snaps.to_pandas()
+        df['committed_at'] = df['committed_at'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))              
+        df_summ = pd.DataFrame(df['summary'].apply(self.flatten_tuples).tolist())
+        df_flattened = pd.concat([df.drop('summary', axis=1), df_summ], axis=1)        
+        cols = df_flattened.to_json(orient='records', default_handler = BinaryEncoder)                
+        return cols
 
     def get_sample_data(self, table_id, partition, limit=100):
-        table = self.catalog.load_table(table_id)
-        import daft
+        table = self.catalog.load_table(table_id)        
         df = daft.read_iceberg(table)
         df = df.limit(limit)
         paT = df.to_arrow()
@@ -165,6 +175,10 @@ class LakeView():
         else:            
             data = paTable.to_pandas().to_json(orient='records', default_handler = BinaryEncoder)
             return data
+        
+    # Flattening the tuple array into separate columns
+    def flatten_tuples(self, row):    
+        return {k: v for k, v in row}
         
 def get_gcp_access_token(service_account_file, scopes):
     """

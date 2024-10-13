@@ -24,9 +24,11 @@
       {:else if orient == 'table'}            
       <thead>
         <tr>
-          {#each Object.keys(jsonData[0]) as key}
-            <th>{key}</th>
-          {/each}
+          {#if jsonData.length > 0}
+            {#each Object.keys(jsonData[0]) as key}
+              <th>{key}</th>
+            {/each}
+          {/if}
         </tr>
       </thead>
       {#each jsonData as row}                

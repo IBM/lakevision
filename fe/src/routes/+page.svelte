@@ -7,6 +7,10 @@
     import { onMount } from 'svelte';
     import Table from '../lib/components/Table.svelte';
     import JsonTable from '../lib/components/JsonTable.svelte';
+    import { Loading } from 'carbon-components-svelte';
+    import { BarChartSimple } from '@carbon/charts-svelte'    
+    import '@carbon/charts-svelte/styles.css'
+    import options from './options'
 
     let namespace;
     let table;
@@ -31,6 +35,8 @@
     let partition_specs_loading = true;
     let properties = [];
     let properties_loading = true;
+    let data_change = [];
+    let data_change_loading = true;
 
     async function get_data(table_id, feature){
         let loading = true;
@@ -98,7 +104,7 @@
         try {
             snapshots_loading = true;        
             snapshots = await get_data(namespace+"."+table, "snapshots");  
-            snapshots_loading = false;  
+            snapshots_loading = false;              
         } catch (err) {
             error = err.message; 
             snapshots_loading = false;  
@@ -110,6 +116,15 @@
         } catch (err) {
             error = err.message; 
             sample_data_loading = false;  
+        }        
+        try {
+            data_change_loading = true;          
+            data_change = await get_data(namespace+"."+table, "data-change");              
+            data_change_loading = false;  
+            
+        } catch (err) {
+            error = err.message; 
+            data_change_loading = false;  
         }        
     })();
  
@@ -129,7 +144,8 @@
         <Tab label="Summary" />
         <Tab label="Partitions" />
         <Tab label="Snapshots" />
-        <Tab label="Sample Data" />
+        <Tab label="Sample Data" /> 
+        <Tab label="Insights" />        
         <svelte:fragment slot="content">
             <TabContent><br/>
                 <Grid>
@@ -161,7 +177,7 @@
                         <br />
                         Partition Specs
                         <br />  <br />                        
-                        {#if !partition_specs_loading && partition_specs}
+                        {#if !partition_specs_loading && partition_specs}                        
                             <JsonTable jsonData={partition_specs} orient="table" /> 
                         {/if}
                         </Column>
@@ -180,6 +196,15 @@
             <TabContent><br/>
                 <Table fetched_data={sample_data} loading={sample_data_loading} table_title={namespace}.{table}/>                  
                 
+            </TabContent>
+            <TabContent><br/>
+                {#if data_change_loading}
+                    <p align="center">
+                        <br /> <Loading withOverlay={false} small /> <br />
+                    </p>
+                {:else}                                    
+                    <BarChartSimple data={data_change} options={options} style="padding:2rem;" />     
+                {/if}           
             </TabContent>
         </svelte:fragment>
       </Tabs>
