@@ -57,24 +57,24 @@ class LakeView():
         table = self.catalog.load_table(table_id)
         return table
     
-    def get_partition_data(self, table_id):        
-        table = self.catalog.load_table(table_id)
+    def get_partition_data(self, table):        
+        #table = self.catalog.load_table(table_id)
         pa_partitions = table.inspect.partitions()        
         if pa_partitions.num_rows >1:
             pa_partitions = pa_partitions.sort_by([('partition', 'ascending')])
         cols = self.paTable_to_dataTable(pa_partitions)
         return cols
 
-    def get_snapshot_data(self, table_id):        
-        table = self.catalog.load_table(table_id)
+    def get_snapshot_data(self, table):        
+        #table = self.catalog.load_table(table_id)
         pa_snaps = table.inspect.snapshots().sort_by([('committed_at', 'descending')])
         df = pa_snaps.to_pandas()
         df['committed_at'] = df['committed_at'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         cols = df.to_json(orient='records')          
         return cols
     
-    def get_data_change(self, table_id):        
-        table = self.catalog.load_table(table_id)
+    def get_data_change(self, table):        
+        #table = self.catalog.load_table(table_id)
         pa_snaps = table.inspect.snapshots().sort_by([('committed_at', 'ascending')])
         pa_snaps = pa_snaps.drop(['snapshot_id', 'parent_id', 'operation', 'manifest_list'])
         df = pa_snaps.to_pandas()
@@ -84,8 +84,8 @@ class LakeView():
         cols = df_flattened.to_json(orient='records', default_handler = BinaryEncoder)                
         return cols
 
-    def get_sample_data(self, table_id, partition, limit=100):
-        table = self.catalog.load_table(table_id)        
+    def get_sample_data(self, table, partition, limit=50):
+        #table = self.catalog.load_table(table_id)        
         df = daft.read_iceberg(table)
         df = df.limit(limit)
         paT = df.to_arrow()
@@ -105,8 +105,8 @@ class LakeView():
                     row_filter = ''
         '''
 
-    def get_schema(self, table_id):
-        table = self.catalog.load_table(table_id)
+    def get_schema(self, table):
+        #table = self.catalog.load_table(table_id)
         df = pd.DataFrame(columns=["Field_id", "Field", "DataType", "Required", "Comments"])
         for field in table.schema().fields:
             df2 = pd.DataFrame([[str(field.field_id), str(field.name), str(field.field_type), str(field.required), field.doc]], columns=["Field_id", "Field", "DataType", "Required", "Comments"])
@@ -114,8 +114,8 @@ class LakeView():
         pa_table = pa.Table.from_pandas(df)
         return self.paTable_to_dataTable(pa_table)
     
-    def get_summary(self, table_id):
-        table = self.catalog.load_table(table_id)
+    def get_summary(self, table):
+        #table = self.catalog.load_table(table_id)
         ret = {}         
         ret['Location'] = table.location()
         ret['Current snapshotid'] = table.metadata.current_snapshot_id
@@ -131,12 +131,12 @@ class LakeView():
                 ret['Identifier fields'] = list(table.schema().identifier_field_names())
         return json.dumps(ret)
 
-    def get_properties(self, table_id):
-        table = self.catalog.load_table(table_id)
+    def get_properties(self, table):
+        #table = self.catalog.load_table(table_id)
         return json.dumps(table.properties)         
         
-    def get_partition_specs(self, table_id):
-        table = self.catalog.load_table(table_id)
+    def get_partition_specs(self, table):
+        #table = self.catalog.load_table(table_id)
         partitionfields=table.spec().fields
         c1, c2, c3 = [], [], []
         for f in partitionfields:

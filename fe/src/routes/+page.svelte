@@ -16,6 +16,13 @@
     let table;
     let error = "";
     let url = "";
+    let pageSessionId = crypto.randomUUID();
+    
+    onMount(() => {    
+       // pageSessionId = crypto.randomUUID(); //sessionStorage.getItem('pageSessionId') || crypto.randomUUID();
+        //sessionStorage.setItem('pageSessionId', pageSessionId);
+    });
+
     $: {
         selectedNamespce.subscribe(value => {namespace = value; });
         selectedTable.subscribe(value => {table = value; });
@@ -45,7 +52,17 @@
             return;
         }
         try{            
-            const res = await fetch(`${env.PUBLIC_API_SERVER}/tables/${table_id}/${feature}`);            
+            const res = await fetch(
+                `${env.PUBLIC_API_SERVER}/tables/${table_id}/${feature}`,
+                {
+                    //method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Page-Session-ID': pageSessionId, // Include the session ID in the headers
+                    },
+                    //queryParams: { table_id: tableId },
+                }
+            );            
             if (res.ok) {
                 const data = await res.json();                                   
                 return JSON.parse(data);                
@@ -60,67 +77,86 @@
         }  
     }            
     
+    let selected = 0; 
+    $: reset(table);
+
     $: (async () => {        
         try {
-            summary_loading = true;          
-            summary = await get_data(namespace+"."+table, "summary");  
-            summary_loading = false;              
+            if(selected==0 ){
+                summary_loading = true;          
+                summary = await get_data(namespace+"."+table, "summary");  
+                summary_loading = false;   
+            }           
         } catch (err) {
             error = err.message; 
             summary_loading = false;  
         }
         try {
-            properties_loading = true;          
-            properties = await get_data(namespace+"."+table, "properties");  
-            properties_loading = false;  
+            if(selected==0 ){
+                properties_loading = true;          
+                properties = await get_data(namespace+"."+table, "properties");  
+                properties_loading = false;  
+            }
         } catch (err) {
             error = err.message; 
             properties_loading = false;  
         }
         try {
-            schema_loading = true;          
-            schema = await get_data(namespace+"."+table, "schema");  
-            schema_loading = false;  
+            if(selected==0 ){
+                schema_loading = true;          
+                schema = await get_data(namespace+"."+table, "schema");  
+                schema_loading = false;  
+            }
         } catch (err) {
             error = err.message; 
             schema_loading = false;  
         }        
         try {
-            partition_specs_loading = true;          
-            partition_specs = await get_data(namespace+"."+table, "partition-specs");  
-            partition_specs_loading = false; 
+            if(selected==0 ){
+                partition_specs_loading = true;          
+                partition_specs = await get_data(namespace+"."+table, "partition-specs");  
+                partition_specs_loading = false; 
+            }
         } catch (err) {
             error = err.message; 
             partition_specs_loading = false;  
         }
         try {        
-            partitions_loading = true; 
-            partitions = await get_data(namespace+"."+table, "partitions");  // Wait for the promise to resolve
-            partitions_loading = false;  
+            if(selected==1 && partitions.length == 0){
+                partitions_loading = true; 
+                partitions = await get_data(namespace+"."+table, "partitions");  // Wait for the promise to resolve
+                partitions_loading = false;  
+            }
         } catch (err) {
             error = err.message; 
             partitions_loading = false;  
         }
         try {
-            snapshots_loading = true;        
-            snapshots = await get_data(namespace+"."+table, "snapshots");  
-            snapshots_loading = false;              
+            if(selected==2 && snapshots.length == 0){
+                snapshots_loading = true;        
+                snapshots = await get_data(namespace+"."+table, "snapshots");  
+                snapshots_loading = false;              
+            }
         } catch (err) {
             error = err.message; 
             snapshots_loading = false;  
         }
         try {
-            sample_data_loading = true;          
-            sample_data = await get_data(namespace+"."+table, "sample");  
-            sample_data_loading = false;  
+            if(selected==3 && sample_data.length == 0){
+                sample_data_loading = true;          
+                sample_data = await get_data(namespace+"."+table, "sample");  
+                sample_data_loading = false;  
+            }
         } catch (err) {
             error = err.message; 
             sample_data_loading = false;  
         }        
         try {
-            data_change_loading = true;          
-            data_change = await get_data(namespace+"."+table, "data-change");              
-            data_change_loading = false;  
+            if(selected==4 && data_change.length == 0){
+                data_change_loading = true;          
+                data_change = await get_data(namespace+"."+table, "data-change");              
+                data_change_loading = false;  
+            }
             
         } catch (err) {
             error = err.message; 
@@ -132,6 +168,15 @@
         url = window.location.origin;
         url = url+"/?namespace="+namespace+"&table="+table;
     }
+
+    function reset(table){
+        partitions = [];
+        snapshots = [];
+        sample_data = [];
+        data_change = [];
+    }
+
+    
 </script>
 
 <Content>    
@@ -140,7 +185,7 @@
     </Tile>    
   
     <br />
-    <Tabs>
+    <Tabs bind:selected>
         <Tab label="Summary" />
         <Tab label="Partitions" />
         <Tab label="Snapshots" />
