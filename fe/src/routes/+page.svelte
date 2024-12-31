@@ -11,6 +11,8 @@
     import { BarChartSimple } from '@carbon/charts-svelte'    
     import '@carbon/charts-svelte/styles.css'
     import options from './options'
+    import VirtualList from 'svelte-tiny-virtual-list';
+    
 
     let namespace;
     let table;
@@ -176,7 +178,10 @@
         data_change = [];
     }
 
-    
+    const dataPromise = snapshots
+    let start // the index of the first visible item
+    let end // the index of the last visible item
+
 </script>
 
 <Content>    
@@ -235,7 +240,36 @@
             </TabContent>
 
             <TabContent><br/>
-                <Table fetched_data={snapshots} loading={snapshots_loading} table_title={namespace}.{table}/>            
+               <!-- <Table fetched_data={snapshots} loading={snapshots_loading} table_title={namespace}.{table}/>            
+                -->
+                {#await dataPromise}
+                    Loading...
+                {:then}                    
+                <p>{snapshots.length}</p>
+                {#if snapshots.length > 0}
+                    <!-- Table Header -->
+                    <div class="header">
+                        <div style="display: flex">
+                        {#each Object.keys(snapshots[0]) as key}                            
+                            <div class="table-cell">{key}</div>
+                        {/each}                        
+                        </div>
+                    </div>
+  
+                    <!-- Virtualized Table -->
+                    <div class="table-container">
+                        <VirtualList width="auto" height={600} itemCount={snapshots.length} itemSize={50}>
+                            <div slot="item" let:index let:style {style} class="table-row">                                
+                                {#each Object.values(snapshots[index]) as value}
+                                <div class="table-cell">{value}</div>
+                                {/each}
+                            </div>
+                        </VirtualList>                        
+                    </div>
+                    {/if}
+                {:catch error}
+                    <p style="color: red">{error.message}</p>
+                {/await}
             </TabContent>
 
             <TabContent><br/>
@@ -257,3 +291,36 @@
   </Content>
 
 
+  <style>
+    .table-container {
+      height: 500px; /* Set a fixed height for the table */
+      overflow: auto; /* Allow scrolling */
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  
+    .table-row {
+      display: flex;
+      align-items: center;
+      height: 40px; /* Match the rowHeight */
+      border-bottom: 1px solid #eee;
+      padding: 0 10px;
+    }
+  
+    .table-cell {
+      flex: 1;
+      padding: 0 5px;
+      text-align: left;
+      max-width: 200px; /* Restrict the width of the cell */
+      white-space: nowrap; /* Prevent text from wrapping to a new line */
+      overflow: hidden; /* Hide any overflowing text */
+      text-overflow: ellipsis; /* Add ellipsis (...) to indicate truncated text */
+    }
+  
+    .header {
+      font-weight: bold;
+      background-color: #f9f9f9;
+      border-bottom: 2px solid #ccc;
+      padding: 10px;
+    }
+  </style>

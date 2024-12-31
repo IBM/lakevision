@@ -14,7 +14,6 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/adapter-node": "^5.2.11",
-		"@sveltejs/adapter-static": "^3.0.8",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
 		"@types/eslint": "^9.6.0",
@@ -35,6 +34,7 @@
 	"overrides": {},
 	"type": "module",
 	"dependencies": {
-		"@carbon/charts-svelte": "^1.22.0"
+		"@carbon/charts-svelte": "^1.22.0",
+		"svelte-tiny-virtual-list": "^2.1.2"
 	}
 }
