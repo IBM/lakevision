@@ -4,26 +4,18 @@
     import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
-    import { onMount } from 'svelte';
-    import Table from '../lib/components/Table.svelte';
     import JsonTable from '../lib/components/JsonTable.svelte';
     import { Loading } from 'carbon-components-svelte';
     import { BarChartSimple } from '@carbon/charts-svelte'    
     import '@carbon/charts-svelte/styles.css'
-    import options from './options'
-    import VirtualList from 'svelte-tiny-virtual-list';
-    
+    import options from './options'        	
+    import VirtualTable from '../lib/components/VirtTable3.svelte';
 
     let namespace;
     let table;
     let error = "";
     let url = "";
-    let pageSessionId = crypto.randomUUID();
-    
-    onMount(() => {    
-       // pageSessionId = crypto.randomUUID(); //sessionStorage.getItem('pageSessionId') || crypto.randomUUID();
-        //sessionStorage.setItem('pageSessionId', pageSessionId);
-    });
+    let pageSessionId = crypto.randomUUID();         
 
     $: {
         selectedNamespce.subscribe(value => {namespace = value; });
@@ -31,21 +23,21 @@
     }
 
     let partitions = [];
-    let partitions_loading = true;
+    let partitions_loading = false;
     let snapshots = [];
-    let snapshots_loading = true;
+    let snapshots_loading = false;
     let sample_data = [];
-    let sample_data_loading = true;
+    let sample_data_loading = false;
     let schema = [];
-    let schema_loading = true;
+    let schema_loading = false;
     let summary = [];
-    let summary_loading = true;
+    let summary_loading = false;
     let partition_specs = [];
-    let partition_specs_loading = true;
+    let partition_specs_loading = false;
     let properties = [];
-    let properties_loading = true;
+    let properties_loading = false;
     let data_change = [];
-    let data_change_loading = true;
+    let data_change_loading = false;
 
     async function get_data(table_id, feature){
         let loading = true;
@@ -83,6 +75,7 @@
     $: reset(table);
 
     $: (async () => {        
+        if( table === '') return;
         try {
             if(selected==0 ){
                 summary_loading = true;          
@@ -126,7 +119,7 @@
         try {        
             if(selected==1 && partitions.length == 0){
                 partitions_loading = true; 
-                partitions = await get_data(namespace+"."+table, "partitions");  // Wait for the promise to resolve
+                partitions = await get_data(namespace+"."+table, "partitions");  
                 partitions_loading = false;  
             }
         } catch (err) {
@@ -176,12 +169,21 @@
         snapshots = [];
         sample_data = [];
         data_change = [];
+        partitions_loading = false;
+        snapshots_loading = false;
+        sample_data_loading = false;
+        data_change_loading = false;
+        properties_loading = false;
+        partition_specs_loading = false;
+        schema_loading = false;
+        summary_loading = false;
+        schema = [];
+        summary = [];
+        partition_specs = [];
+        properties = [];
+        //selected = 0;
     }
-
-    const dataPromise = snapshots
-    let start // the index of the first visible item
-    let end // the index of the last visible item
-
+   
 </script>
 
 <Content>    
@@ -200,17 +202,26 @@
             <TabContent><br/>
                 <Grid>
                     <Row>
-                      <Column aspectRatio="2x1">
-                        
+                      <Column aspectRatio="2x1"> 
                         <br />
                         Summary
                         <br />                        
-                        <br />
-                        {#if !summary_loading && summary}
-                            <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                     
-                        {/if}
-                        <br />
-                        <br />
+                        <br />                        
+                        <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                  
+                        </Column>
+                        <Column aspectRatio="2x1">    
+                            <br />                        
+                            Schema
+                            <br />
+                            <br />
+                            {#if !schema_loading && schema.length > 0}
+                                <VirtualTable data={schema} columns={schema[0]} rowHeight={35} tableHeight={310} defaultColumnWidth={121}/>
+                            {/if}
+                        </Column>
+                    </Row>
+                    <Row>
+                        <Column aspectRatio="2x1">   
+                            <br />                    
                         Properties
                         <br />
                         <br />
@@ -218,12 +229,7 @@
                             <JsonTable jsonData={properties} orient = "kv"></JsonTable>                                                     
                         {/if}
                      </Column>
-                      <Column aspectRatio="2x1">
-                        <br />
-                        Schema
-                        <br />
-                        <br />
-                        <Table fetched_data={schema} loading={schema_loading} table_title={namespace}.{table}/>
+                      <Column aspectRatio="2x1">  
                         <br />
                         Partition Specs
                         <br />  <br />                        
@@ -232,55 +238,42 @@
                         {/if}
                         </Column>
                     </Row>
-                  </Grid>
-                
+                  </Grid>                
             </TabContent>
-            <TabContent><br/>                                         
-                <Table fetched_data={partitions} loading={partitions_loading} table_title={namespace}.{table}/>
+
+            <TabContent><br/> 
+                {#if partitions_loading}
+                    <Loading withOverlay={false} small />      
+                {:else if partitions.length > 0}
+                    <VirtualTable data={partitions} columns={partitions[0]} rowHeight={35}/>  
+                    <br />
+                    Total items: {partitions.length}              
+                {/if}         
             </TabContent>
 
             <TabContent><br/>
-               <!-- <Table fetched_data={snapshots} loading={snapshots_loading} table_title={namespace}.{table}/>            
-                -->
-                {#await dataPromise}
-                    Loading...
-                {:then}                    
-                <p>{snapshots.length}</p>
-                {#if snapshots.length > 0}
-                    <!-- Table Header -->
-                    <div class="header">
-                        <div style="display: flex">
-                        {#each Object.keys(snapshots[0]) as key}                            
-                            <div class="table-cell">{key}</div>
-                        {/each}                        
-                        </div>
-                    </div>
-  
-                    <!-- Virtualized Table -->
-                    <div class="table-container">
-                        <VirtualList width="auto" height={600} itemCount={snapshots.length} itemSize={50}>
-                            <div slot="item" let:index let:style {style} class="table-row">                                
-                                {#each Object.values(snapshots[index]) as value}
-                                <div class="table-cell">{value}</div>
-                                {/each}
-                            </div>
-                        </VirtualList>                        
-                    </div>
-                    {/if}
-                {:catch error}
-                    <p style="color: red">{error.message}</p>
-                {/await}
+                {#if snapshots_loading}
+                    <Loading withOverlay={false} small />      
+                {:else if snapshots.length > 0}
+                    <VirtualTable data={snapshots} columns={snapshots[0]} rowHeight={35} tableHeight={200}/>  
+                    <br />
+                    Total items: {snapshots.length}              
+                {/if}  
             </TabContent>
 
             <TabContent><br/>
-                <Table fetched_data={sample_data} loading={sample_data_loading} table_title={namespace}.{table}/>                  
-                
+                {#if sample_data_loading}
+                    <Loading withOverlay={false} small />      
+                {:else if sample_data.length > 0}
+                    <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35}/>  
+                    <br />
+                    Sample items: {sample_data.length}              
+                {/if}
             </TabContent>
+
             <TabContent><br/>
-                {#if data_change_loading}
-                    <p align="center">
-                        <br /> <Loading withOverlay={false} small /> <br />
-                    </p>
+                {#if data_change_loading}                    
+                    <br /> <Loading withOverlay={false} small /> <br />                    
                 {:else}                                    
                     <BarChartSimple data={data_change} options={options} style="padding:2rem;" />     
                 {/if}           
@@ -299,23 +292,7 @@
       border-radius: 5px;
     }
   
-    .table-row {
-      display: flex;
-      align-items: center;
-      height: 40px; /* Match the rowHeight */
-      border-bottom: 1px solid #eee;
-      padding: 0 10px;
-    }
-  
-    .table-cell {
-      flex: 1;
-      padding: 0 5px;
-      text-align: left;
-      max-width: 200px; /* Restrict the width of the cell */
-      white-space: nowrap; /* Prevent text from wrapping to a new line */
-      overflow: hidden; /* Hide any overflowing text */
-      text-overflow: ellipsis; /* Add ellipsis (...) to indicate truncated text */
-    }
+   
   
     .header {
       font-weight: bold;
@@ -323,4 +300,43 @@
       border-bottom: 2px solid #ccc;
       padding: 10px;
     }
+
+    :global(.test1) {
+		width: 100%;
+		border: 1px solid black;
+	}
+
+	:global(.test1 thead) {
+		text-align: left;
+		border-bottom: 10px solid black;
+	}
+    :global(.test1 tr) {
+		border-bottom: 10px solid grey;
+		border-top: 10px solid grey;
+	}
+
+	:global(.test1 td:not(:last-of-type)) {
+		border-right: 1px solid grey;
+	}
+	:global(.test1 th:not(:last-of-type)) {
+		border-right: 1px solid grey;
+	}
+    .td:first-of-type,
+	td:first-of-type,
+	:global(.test1 th:first-of-type) {
+		width: 45vw;
+	}
+
+	td,
+	.td,
+	:global(.test1 th) {
+		width: calc((45vw - 10px) / 4);
+		word-wrap: break-word;
+	}
+
+	:global(.test1 th:last-of-type),
+	.td:last-of-type,
+	td:last-of-type {
+		text-align: right;
+	}
   </style>

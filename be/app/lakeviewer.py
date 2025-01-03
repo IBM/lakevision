@@ -70,6 +70,7 @@ class LakeView():
         pa_snaps = table.inspect.snapshots().sort_by([('committed_at', 'descending')])
         df = pa_snaps.to_pandas()
         df['committed_at'] = df['committed_at'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
+        df['id'] = df.index
         cols = df.to_json(orient='records')
         return cols
     

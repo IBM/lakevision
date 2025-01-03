@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from lakeviewer import LakeView
 from typing import Generator
 from pyiceberg.table import Table
+import time
+from threading import Timer
 
 app = FastAPI()
 lv = LakeView()
@@ -14,6 +16,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+page_session_cache = {}
+CACHE_EXPIRATION = 4 * 60 # 4 minutes
 namespaces = lv.get_namespaces()
 
 def load_table(table_id: str) -> Table: #Generator[Table, None, None]:    
@@ -25,21 +30,21 @@ def load_table(table_id: str) -> Table: #Generator[Table, None, None]:
         raise HTTPException(status_code=404, detail="Table not found")
     finally:
         # Optional cleanup
-        print(f"Finished with table {table_id}")
-
-page_session_cache = {}
+        print(f"Finished with loading table {table_id}")
 
 # Dependency to load the table only once
 def get_table(request: Request, table_id: str):
-    page_session_id = request.headers.get("X-Page-Session-ID")
-    print(page_session_id)
+    page_session_id = request.headers.get("X-Page-Session-ID")    
     if not page_session_id:
         raise HTTPException(status_code=400, detail="Missing X-Page-Session-ID header")
     cache_key = f"{page_session_id}_{table_id}"
 
     if cache_key not in page_session_cache:
-        page_session_cache[cache_key] = load_table(table_id)
-    return page_session_cache[cache_key]    
+        tbl = load_table(table_id)
+        page_session_cache[cache_key] = (tbl, time.time())
+    else:
+        tbl, timestamp = page_session_cache[cache_key]
+    return tbl    
 
 @app.get("/")
 async def read_root():
@@ -96,6 +101,21 @@ async def read_tables(namespace: str = None):
         ret.append({"id": idx, "text": table[-1]})        
     return ret
     
+def clean_cache():
+    """Remove expired entries from the cache."""
+    current_time = time.time()
+    keys_to_delete = [
+        key for key, (_, timestamp) in page_session_cache.items()
+        if current_time - timestamp > CACHE_EXPIRATION
+    ]
+    for key in keys_to_delete:
+        del page_session_cache[key]
 
+# Schedule periodic cleanup every minute
+def schedule_cleanup():
+    clean_cache()
+    Timer(60, schedule_cleanup).start()
+
+schedule_cleanup()
     
 
