@@ -215,7 +215,7 @@
                             <br />
                             <br />
                             {#if !schema_loading && schema.length > 0}
-                                <VirtualTable data={schema} columns={schema[0]} rowHeight={35} tableHeight={310} defaultColumnWidth={121}/>
+                                <VirtualTable data={schema} columns={schema[0]} rowHeight={37} tableHeight={370} defaultColumnWidth={121}/>
                             {/if}
                         </Column>
                     </Row>
@@ -255,9 +255,11 @@
                 {#if snapshots_loading}
                     <Loading withOverlay={false} small />      
                 {:else if snapshots.length > 0}
-                    <VirtualTable data={snapshots} columns={snapshots[0]} rowHeight={35} tableHeight={200}/>  
+                    <VirtualTable data={snapshots} columns={snapshots[0]} rowHeight={35}/>  
                     <br />
-                    Total items: {snapshots.length}              
+                    Total items: {snapshots.length}     
+                {:else}
+                    No data         
                 {/if}  
             </TabContent>
 

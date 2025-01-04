@@ -66,7 +66,8 @@ class LakeView():
         return cols
 
     def get_snapshot_data(self, table):        
-        #table = self.catalog.load_table(table_id)
+        if not table.metadata.current_snapshot_id:
+            return []
         pa_snaps = table.inspect.snapshots().sort_by([('committed_at', 'descending')])
         df = pa_snaps.to_pandas()
         df['committed_at'] = df['committed_at'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
@@ -123,9 +124,17 @@ class LakeView():
         if table.metadata.current_snapshot_id:
             paTable = table.inspect.snapshots().sort_by([('committed_at', 'descending')]).select(['summary', 'committed_at'])
             ret['Last updated (UTC)'] = paTable.to_pydict()['committed_at'][0].strftime('%Y-%m-%d %H:%M:%S')
-            ret['Total records'] = paTable.to_pydict()['summary'][0][5][1]
-            ret['Total file size'] = paTable.to_pydict()['summary'][0][6][1]
-            ret['Total data files'] = paTable.to_pydict()['summary'][0][7][1]        
+            print(dict(paTable.to_pydict()['summary'][0]))
+            #paTable = paTable.select(['summary'])
+            result = dict(paTable.to_pydict()['summary'][0]) #[dict(inner_list) for inner_list in paTable.to_pydict()['summary']]
+            #print(result['total-records'])
+            ret['Total records'] = result['total-records']
+            ret['Total file size'] = result['total-files-size']
+            ret['Total data files'] = result['total-data-files']
+            ret['Total delete files'] = result['total-delete-files']        
+            ret['Total snapshots'] = paTable.num_rows 
+        else:
+            ret['Total records'] = '0'
         ret['Format version'] = table.metadata.format_version
         ret['Identifier fields'] = ''
         if len(table.schema().identifier_field_names()) > 0:
