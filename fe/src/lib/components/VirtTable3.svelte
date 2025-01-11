@@ -1,4 +1,5 @@
 <script>
+	import { Modal } from 'carbon-components-svelte';
 	import { createVirtualizer } from '@tanstack/svelte-virtual';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
@@ -178,16 +179,9 @@
 </div>
 
 {#if showPopover}
-	<div class="popover" style="top: {popoverPosition.top}px; left: {popoverPosition.left}px;">
-		<div class="popover-close" role="button"
-        tabindex="0"
-        on:keypress={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {closePopover};
-        }} on:click={closePopover}>✖</div>
-		<br />
-		
-        <pre style="white-space: pre-wrap;">{formatValue(popoverContent)}</pre>
-	</div>
+	<Modal passiveModal bind:open={showPopover} modalHeading="" on:open on:close>
+		<pre >{formatValue(popoverContent)}</pre>
+	</Modal>
 {/if}
 
 <style>
@@ -233,34 +227,5 @@
 		display: flex;
 		position: absolute;
 		width: fit-content;
-	}
-
-	.popover {
-		position: absolute;
-		z-index: 10;
-		background: white;
-		border: 1px solid #0e0e0e;
-		box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-		padding: 8px;
-		border-radius: 4px;
-		max-width: 400px;
-		max-height: 450px; /* Set a fixed height */
-		overflow-y: auto; /* Enable vertical scrolling */
-		word-wrap: break-word;
-		white-space: pre-wrap;
-	}
-
-	.popover-close {
-		position: absolute;
-		top: 5px;
-		left: 5px; /* Move it to the left */
-		cursor: pointer;
-		font-size: 12px;
-		color: #555;
-		background: #f4f4f4;
-		border: none;
-		padding: 2px 5px;
-		border-radius: 3px;
-		box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
 	}
 </style>
