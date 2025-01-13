@@ -15,7 +15,7 @@
     let table;
     let error = "";
     let url = "";
-    let pageSessionId = crypto.randomUUID();         
+    let pageSessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);       
 
     $: {
         selectedNamespce.subscribe(value => {namespace = value; });
