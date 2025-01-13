@@ -28,7 +28,7 @@
   	let q_tab = $page.url.searchParams.get('table');
 	
 	export let data;
-	let isSideNavOpen = false;
+	let isSideNavOpen = true;
 	
 	/**
 	 * @type {never[]}
@@ -127,7 +127,7 @@
 	let tabpop = false;
 </script>
 
-<Header company="Apache Iceberg" platformName="Lakevision" bind:isSideNavOpen>
+<Header company="Apache Iceberg" platformName="Lakevision" >
 	<svelte:fragment slot="skip-to-content">
 		<SkipToContent />
 	</svelte:fragment>
