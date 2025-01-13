@@ -51,7 +51,7 @@ async def read_root():
     return {"Hello": "World"}
 
 @app.get("/namespaces")
-async def read_namespaces(refresh=False):    
+def read_namespaces(refresh=False):    
     ret = []
     global namespaces
     if refresh or len(namespaces)==0:
@@ -61,39 +61,39 @@ async def read_namespaces(refresh=False):
     return ret
 
 @app.get("/tables/{table_id}/snapshots")
-async def read_table_snapshots(table: Table = Depends(get_table)):
+def read_table_snapshots(table: Table = Depends(get_table)):
     return lv.get_snapshot_data(table)
 
 @app.get("/tables/{table_id}/partitions")
-async def read_table_partitions(table: Table = Depends(get_table)):
+def read_table_partitions(table: Table = Depends(get_table)):
     return lv.get_partition_data(table)
 
 @app.get("/tables/{table_id}/sample")    
-async def read_sample_data(table: Table = Depends(get_table), partition=None, limit=100):
+def read_sample_data(table: Table = Depends(get_table), partition=None, limit=100):
     return lv.get_sample_data(table, partition, limit)
 
 @app.get("/tables/{table_id}/schema")    
-async def read_schema_data(table: Table = Depends(get_table)):
+def read_schema_data(table: Table = Depends(get_table)):
     return lv.get_schema(table)
 
 @app.get("/tables/{table_id}/summary")    
-async def read_summary_data(table: Table = Depends(get_table)):
+def read_summary_data(table: Table = Depends(get_table)):
     return lv.get_summary(table)
 
 @app.get("/tables/{table_id}/properties")    
-async def read_properties_data(table: Table = Depends(get_table)):
+def read_properties_data(table: Table = Depends(get_table)):
     return lv.get_properties(table)
 
 @app.get("/tables/{table_id}/partition-specs")    
-async def read_partition_specs(table: Table = Depends(get_table)):
+def read_partition_specs(table: Table = Depends(get_table)):
     return lv.get_partition_specs(table)
 
 @app.get("/tables/{table_id}/data-change")    
-async def read_data_change(table: Table = Depends(get_table)):
+def read_data_change(table: Table = Depends(get_table)):
     return lv.get_data_change(table)
 
 @app.get("/tables")
-async def read_tables(namespace: str = None):    
+def read_tables(namespace: str = None):    
     ret = []
     if not namespace:
         return ret
