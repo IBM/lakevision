@@ -23,7 +23,6 @@ a. Clone this repo and cd to lakevision directory.
 b. Build:
 
 ```
-docker build -t lakevision-base --build-arg NODE_VERSION=22.9.0 -f Dockerfile.base .
 docker build -t lakevision:1.0 .
 ```
 
@@ -32,10 +31,10 @@ Provide the configuration - you will need Iceberg Catalog URL, and authenticatio
 Run the docker image, like:
 
 ```
-docker run --env-file my.env -it -p 5179:5173 -p 8000:8000 lakevision:1.0 /start.sh
+docker run --env-file my.env -it -p 80:80 lakevision:1.0 /app/start.sh
 ```
 
-The Lakevision application is built on `SvelteKit` and `Fastapi`. If everything built fine, you would see output on command line about the backend app listening on port 8000. Launch the browser http://localhost:5179 and you would see all the details of your Lakehouse.
+The Lakevision application is built on `SvelteKit` and `Fastapi`. If everything built fine, you would see output on command line about the backend app listening on port 8000. Launch the browser http://localhost and you would see all the details of your Lakehouse.
 
 Tested on Linux and Mac with Iceberg REST catalog, but will support any catalog that works with pyiceberg.
 
