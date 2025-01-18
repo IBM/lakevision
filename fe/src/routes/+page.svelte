@@ -47,7 +47,7 @@
         }
         try{            
             const res = await fetch(
-                `${env.PUBLIC_API_SERVER}/tables/${table_id}/${feature}`,
+                '/api/tables/${table_id}/${feature}',
                 {
                     //method: 'GET',
                     headers: {
