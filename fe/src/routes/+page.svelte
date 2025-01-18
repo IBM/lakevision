@@ -47,7 +47,7 @@
         }
         try{            
             const res = await fetch(
-                '/api/tables/${table_id}/${feature}',
+                `/api/tables/${table_id}/${feature}`,
                 {
                     //method: 'GET',
                     headers: {
