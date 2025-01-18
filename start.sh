@@ -5,7 +5,7 @@ fastapi run /app/be/app/api.py --port 8000 &
 cd /app/fe
 npm run build
 node build &
-nginx -g 'daemon off;' &
+nginx -g 'daemon off;'
 #npm run dev -- --host&
 
 
