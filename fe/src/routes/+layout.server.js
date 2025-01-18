@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/public';
 
 export async function load({params, url}) {
     let res;   
-    res = await fetch('/api/namespaces');
+    res = await fetch(`${env.PUBLIC_API_SERVER_SERVER_SIDE}/namespaces`);
     if (res.ok) {
         const data = await res.json();            
         return {"namespaces": data};;
