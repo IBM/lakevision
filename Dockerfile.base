@@ -1,4 +1,4 @@
-FROM python:bookworm
+FROM python:3.12.8-bookworm
 
 RUN groupadd --gid 1000 lv && useradd --uid 1000 --gid lv --shell /bin/bash --create-home lv
 ENV POETRY_HOME=/usr/local
@@ -24,8 +24,8 @@ RUN NODE_VERSION="$(curl -fsSL https://nodejs.org/dist/latest/SHASUMS256.txt | h
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 RUN corepack enable yarn
 RUN \
-  apt-get update && \
-  apt-get upgrade -yqq && \
+  apt-get update --allow-insecure-repositories --allow-unauthenticated && \
+  apt-get install -y nginx && \
   pip install -U pip pipenv uv && \
   curl -sSL https://install.python-poetry.org | python - && \
   rm -rf /var/lib/apt/lists/*
