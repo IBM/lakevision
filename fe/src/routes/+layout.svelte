@@ -55,7 +55,7 @@
 			selectedNamespce.set(namespace);
             dropdown2_selectedId = '';
             
-			const res = await fetch(`${env.PUBLIC_API_SERVER}/tables?namespace=${namespace}`);
+			const res = await fetch('/tables?namespace=${namespace}');
 			console.log(res.ok);
 			if (res.ok) {
 				tables = await res.json();
