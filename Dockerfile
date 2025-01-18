@@ -1,4 +1,16 @@
-FROM lakevision-base:latest
+FROM node:23.6.0-bookworm AS builder
+RUN \
+  apt-get update && \
+  #apt-get update --allow-insecure-repositories --allow-unauthenticated && \
+  apt-get install -y nginx && \
+  apt-get install -y python3 python3-pip && \
+  rm /usr/lib/python3.*/EXTERNALLY-MANAGED && \
+  pip install -U pip pipenv uv && \
+  #curl -sSL https://install.python-poetry.org | python3 - && \
+  rm -rf /var/lib/apt/lists/*
+RUN pip install pyiceberg s3fs fastapi[standard] pandas uvicorn pyarrow
+
+FROM builder AS be
 ENV PYTHONUNBUFFERED=1
 
 RUN mkdir -p /app
@@ -10,6 +22,8 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY start.sh /app/start.sh
 RUN chmod 755 /app/start.sh
 #USER lv
+
+FROM be
 WORKDIR /app/fe
 COPY ./fe/ .
 
