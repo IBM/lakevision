@@ -131,10 +131,12 @@
 	function setNamespace(nsp){
 		const id = findItemIdByText(data.namespaces, nsp);
 		dropdown1_selectedId = id;	
+		navpop = false;
 	}
 	function setTable(tab){
 		const id = findItemIdByText(tables, tab);
 		dropdown2_selectedId = id;	
+		tabpop = false;
 	}
 	$: {
         selectedNamespce.subscribe(value => {namespace = value; });
