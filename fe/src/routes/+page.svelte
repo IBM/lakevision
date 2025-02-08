@@ -287,58 +287,5 @@
 
 
   <style>
-    .table-container {
-      height: 500px; /* Set a fixed height for the table */
-      overflow: auto; /* Allow scrolling */
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-  
    
-  
-    .header {
-      font-weight: bold;
-      background-color: #f9f9f9;
-      border-bottom: 2px solid #ccc;
-      padding: 10px;
-    }
-
-    :global(.test1) {
-		width: 100%;
-		border: 1px solid black;
-	}
-
-	:global(.test1 thead) {
-		text-align: left;
-		border-bottom: 10px solid black;
-	}
-    :global(.test1 tr) {
-		border-bottom: 10px solid grey;
-		border-top: 10px solid grey;
-	}
-
-	:global(.test1 td:not(:last-of-type)) {
-		border-right: 1px solid grey;
-	}
-	:global(.test1 th:not(:last-of-type)) {
-		border-right: 1px solid grey;
-	}
-    .td:first-of-type,
-	td:first-of-type,
-	:global(.test1 th:first-of-type) {
-		width: 45vw;
-	}
-
-	td,
-	.td,
-	:global(.test1 th) {
-		width: calc((45vw - 10px) / 4);
-		word-wrap: break-word;
-	}
-
-	:global(.test1 th:last-of-type),
-	.td:last-of-type,
-	td:last-of-type {
-		text-align: right;
-	}
   </style>
