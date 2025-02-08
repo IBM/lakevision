@@ -168,7 +168,7 @@ def get_token(request: Request, tokenReq: TokenRequest):
     #print(response.json())
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to exchange code for token")
-    r2 = requests.get(f'{OPENID_PROVIDER_URL}/userinfo?access_token={response.json()['access_token']}')
+    r2 = requests.get(f"{OPENID_PROVIDER_URL}/userinfo?access_token={response.json()['access_token']}")
     user_email = r2.json()['email'] 
     request.session['user'] = user_email
     return JSONResponse(user_email)  
