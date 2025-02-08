@@ -8,3 +8,6 @@ uvicorn
 gunicorn
 getdaft
 packaging
+httpx
+authlib
+itsdangerous

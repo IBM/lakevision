@@ -5,19 +5,22 @@
 		Header,
         HeaderUtilities,
         HeaderActionLink,
+		HeaderGlobalAction,
 		ComboBox,		
 		SideNav,
 		SideNavItems,		
 		SkipToContent,
 		SideNavLink,
 		Modal
+		
 	} from 'carbon-components-svelte';	
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
 	import { selectedTable } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { SettingsEdit } from 'carbon-icons-svelte';
+	import { goto } from "$app/navigation";
+	import { Logout, UserAvatarFilledAlt } from 'carbon-icons-svelte';
 
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
@@ -26,10 +29,11 @@
   	// Extract query parameters
   	let q_ns = $page.url.searchParams.get('namespace');
   	let q_tab = $page.url.searchParams.get('table');
-	
+
 	export let data;
 	let isSideNavOpen = true;
-	
+	let user;
+	let AUTH_ENABLED = false;
 	/**
 	 * @type {never[]}
 	 */
@@ -67,7 +71,7 @@
 			tableLoadedEvent.dispatchEvent(new Event("tablesLoaded"));
 		}
 	}
-
+	
 	function waitForTables() {
 		return new Promise((resolve) => {
 			tableLoadedEvent.addEventListener("tablesLoaded", () => {
@@ -101,6 +105,18 @@
 	}
 
 	onMount(() => {		
+		if(env.PUBLIC_AUTH_ENABLED=='true'){AUTH_ENABLED=true;}
+		if(AUTH_ENABLED && user==null){
+			const params = new URLSearchParams(window.location.search);
+			const code = params.get("code");
+			if (code) {
+				exchangeCodeForToken(code);		
+			} else {
+				console.error("No authorization code found!");
+				login();
+			}
+		}
+
 		if(q_tab){
 			waitForTables().then((result) => {
 				console.log("The value is available:", result); 
@@ -125,6 +141,53 @@
 	}
 	let navpop = false;
 	let tabpop = false;
+
+	async function exchangeCodeForToken(code) {
+		const response = await fetch("/api/auth/token", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ code }),
+		credentials: "include", 
+		});
+
+		if (response.ok) {
+			const data = await response.json();
+			console.log("Token received:", data);
+			user = data;
+			goto("/"); 
+		} else {
+			console.error("Error exchanging token");
+		}
+	}
+
+	const clientId 			= env.PUBLIC_OPENID_CLIENT_ID;
+  	const openidProviderUrl = env.PUBLIC_OPENID_PROVIDER_URL+"/authorize";
+  	const redirectUri 		= encodeURIComponent(env.PUBLIC_REDIRECT_URI);
+
+	function login() {
+		window.location.href = `${openidProviderUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile%20email`;
+		showLogin = false;
+	}
+
+	async function logout() {
+		const res = await fetch('/api/logout');		
+		user = ''
+		return;
+	}
+
+	let showLogin = false;	
+	let loginPosition = { top: 0, left: 0 };
+
+	function handleLogout(event) {		
+		logout();
+		showLogin = true;
+		const rect = event.target.getBoundingClientRect();
+		loginPosition = {
+			top: rect.top + rect.height + window.scrollY,
+			left: rect.left + window.scrollX
+		};		
+	}
+
 </script>
 
 <Header company="Apache Iceberg" platformName="Lakevision" >
@@ -132,16 +195,20 @@
 		<SkipToContent />
 	</svelte:fragment>
     <HeaderUtilities>
-        <HeaderActionLink
+		<HeaderActionLink
             href="https://github.com/IBM/lakevision"
             target="_blank">
             <LogoGithub slot="icon" size={20} />
         </HeaderActionLink>
+		{#if AUTH_ENABLED}
+			<HeaderGlobalAction iconDescription={user}  icon={UserAvatarFilledAlt}/>		
+			<HeaderGlobalAction iconDescription='Logout'  icon={Logout} on:click={(event) => handleLogout(event)}/>
+		{/if}
     </HeaderUtilities>
 </Header>
 <SideNav bind:isOpen={isSideNavOpen}>
 	<SideNavItems>
-		<br />
+		<br />		
 		<ComboBox
 			titleText="Namespace"
 			items={data.namespaces}						
@@ -157,7 +224,6 @@
 	<SideNavLink on:click={() => ( navpop=true)}>Show All</SideNavLink>
 	
 		<br /> <br /><br /> <br /><br /> <br />
-
 		<ComboBox
 			titleText="Table"
 			disabled={loading}
@@ -209,6 +275,16 @@
 		</table>
 	</Modal>
 {/if}
+<Modal
+  bind:open={showLogin}
+  modalHeading="Login"
+  primaryButtonText="Login"
+  secondaryButtonText="Cancel"
+  on:click:button--secondary={() => (showLogin = false)}  
+  on:open
+  on:close
+  on:submit={login}
+/>
 <slot></slot>
 
 <style>

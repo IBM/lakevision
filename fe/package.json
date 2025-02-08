@@ -34,8 +34,8 @@
 	"overrides": {},
 	"type": "module",
 	"dependencies": {
-		"@carbon/charts-svelte": "1.22.0",		
-		"@tanstack/svelte-virtual": "^3.11.2",		
+		"@carbon/charts-svelte": "1.22.0",
+		"@tanstack/svelte-virtual": "^3.11.2",
 		"lodash-es": "^4.17.21"
 	}
 }

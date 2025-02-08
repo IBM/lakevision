@@ -180,7 +180,7 @@
 
 {#if showPopover}
 	<Modal passiveModal bind:open={showPopover} modalHeading="" on:open on:close>
-		<pre >{formatValue(popoverContent)}</pre>
+		<br/><pre >{formatValue(popoverContent)}</pre><br/>
 	</Modal>
 {/if}
 
