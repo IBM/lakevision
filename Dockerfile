@@ -1,4 +1,4 @@
-FROM node:23.6.0-bookworm AS builder
+FROM node:20.17.0-bookworm AS builder
 RUN \
   apt-get update && \
   apt-get install -y nginx && \
