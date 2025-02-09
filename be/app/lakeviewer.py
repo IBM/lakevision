@@ -26,7 +26,7 @@ class LakeView():
             self.catalog = catalog.load_catalog("default")
         self.namespace_options = []        
 
-    def get_namespaces(_self, include_nested: bool = False):
+    def get_namespaces(_self, include_nested: bool = True):
         result = []
         namespaces = _self.catalog.list_namespaces()
         for ns in namespaces:
