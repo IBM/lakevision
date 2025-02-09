@@ -31,10 +31,10 @@ Provide the configuration - you will need Iceberg Catalog URL, and authenticatio
 Run the docker image, like:
 
 ```
-docker run --env-file my.env -it -p 80:80 lakevision:1.0 /app/start.sh
+docker run --env-file my.env -it -p 8081:8081 lakevision:1.0 /app/start.sh
 ```
 
-The Lakevision application is built on `SvelteKit` and `Fastapi`. If everything built fine, you would see output on command line about the backend app listening on port 8000. Launch the browser http://localhost and you would see all the details of your Lakehouse.
+The Lakevision application is built on `SvelteKit` and `Fastapi`. If everything built fine, you would see output on command line about the backend app listening on port 8000. Launch the browser http://localhost:8081 and you would see all the details of your Lakehouse.
 
 Tested on Linux and Mac with Iceberg REST catalog, but will support any catalog that works with pyiceberg.
 
