@@ -1,12 +1,10 @@
 FROM node:23.6.0-bookworm AS builder
 RUN \
   apt-get update && \
-  #apt-get update --allow-insecure-repositories --allow-unauthenticated && \
   apt-get install -y nginx && \
   apt-get install -y python3 python3-pip && \
   rm /usr/lib/python3.*/EXTERNALLY-MANAGED && \
   pip install -U pip pipenv uv && \
-  #curl -sSL https://install.python-poetry.org | python3 - && \
   rm -rf /var/lib/apt/lists/*
 RUN pip install pyiceberg s3fs fastapi[standard] pandas uvicorn pyarrow
 
@@ -33,6 +31,7 @@ RUN rm -f package-lock.json && rm -rf node_modules
 RUN npm install --package-lock-only
 RUN npm ci
 RUN npm install
-
-EXPOSE 5173 8000 80
+#fix later, this is for OCP
+RUN chmod -R 777 /app/fe/ && chmod -R 777 /var/lib/nginx/
+EXPOSE 3000 8000 8081
 ENV HOST=0.0.0.0
