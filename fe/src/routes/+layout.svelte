@@ -1,5 +1,6 @@
 <script>
 	import { env } from '$env/dynamic/public';
+	import { browser } from '$app/environment'; 
     import 'carbon-components-svelte/css/all.css';
 	import {
 		Header,
@@ -25,7 +26,8 @@
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
 	let namespace;
-	
+	let navpop = false;
+	let tabpop = false;
   	// Extract query parameters
   	let q_ns = $page.url.searchParams.get('namespace');
   	let q_tab = $page.url.searchParams.get('table');
@@ -57,15 +59,14 @@
 		}
 		try {
 			selectedNamespce.set(namespace);
-            dropdown2_selectedId = '';
-            
+            dropdown2_selectedId = '';            
 			const res = await fetch(`/api/tables?namespace=${namespace}`);
 			console.log(res.ok);
 			if (res.ok) {
 				tables = await res.json();
 			} else {
 				console.error('Failed to fetch data:', res.statusText);
-			}
+			}			
 		} finally {
 			loading = false; // Stop loading indicator
 			tableLoadedEvent.dispatchEvent(new Event("tablesLoaded"));
@@ -96,35 +97,31 @@
 		const url = window.location.origin + window.location.pathname;	
 		window.history.replaceState(null, '', url);
 	}
-
-	$: ns = get_tables(formatSelected(dropdown1_selectedId, data.namespaces));
-	$: selectedTable.set(formatSelected(dropdown2_selectedId, tables));
-
+	
 	if(q_ns){
 		setNamespace(q_ns);			
 	}
+
+	$: if(browser){get_tables(formatSelected(dropdown1_selectedId, data.namespaces));}
+	$: if(browser){selectedTable.set(formatSelected(dropdown2_selectedId, tables));}	
 
 	onMount(() => {		
 		if(env.PUBLIC_AUTH_ENABLED=='true'){AUTH_ENABLED=true;}
 		if(AUTH_ENABLED && user==null){
 			const params = new URLSearchParams(window.location.search);
 			const code = params.get("code");
+			const state = params.get("state");
 			if (code) {
-				exchangeCodeForToken(code);		
+				exchangeCodeForToken(code, state);
+				
 			} else {
 				console.error("No authorization code found!");
 				login();
 			}
 		}
-
 		if(q_tab){
-			waitForTables().then((result) => {
-				console.log("The value is available:", result); 
-				const id = findItemIdByText(tables, q_tab);			
-				console.log(id);		
-				dropdown2_selectedId = id;	
-				resetQueryParams();
-			});
+			setTableDynamic();
+			resetQueryParams();
 		}		
   	});
 
@@ -138,13 +135,20 @@
 		dropdown2_selectedId = id;	
 		tabpop = false;
 	}
+	function setTableDynamic(){
+		waitForTables().then((result) => {
+			console.log("The value is available:", result); 
+			const id = findItemIdByText(tables, q_tab);			
+			console.log(id);		
+			dropdown2_selectedId = id;				
+		});
+	}
+
 	$: {
         selectedNamespce.subscribe(value => {namespace = value; });
 	}
-	let navpop = false;
-	let tabpop = false;
 
-	async function exchangeCodeForToken(code) {
+	async function exchangeCodeForToken(code, state) {
 		const response = await fetch("/api/auth/token", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -156,6 +160,16 @@
 			const data = await response.json();
 			console.log("Token received:", data);
 			user = data;
+			const originalParams = state ? `?${decodeURIComponent(state)}` : "";
+			const params = new URLSearchParams(decodeURIComponent(state));
+      		q_ns = params.get("namespace");
+      		q_tab = params.get("table");			
+			if(q_ns){
+				setNamespace(q_ns);		
+				if(q_tab){
+					setTableDynamic();
+				}	
+			}
 			goto("/"); 
 		} else {
 			console.error("Error exchanging token");
@@ -167,7 +181,9 @@
   	const redirectUri 		= encodeURIComponent(env.PUBLIC_REDIRECT_URI);
 
 	function login() {
-		window.location.href = `${openidProviderUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile%20email`;
+		const params = new URLSearchParams(window.location.search);
+    	const state = encodeURIComponent(params.toString());
+		window.location.href = `${openidProviderUrl}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile%20email&state=${state}`;
 		showLogin = false;
 	}
 

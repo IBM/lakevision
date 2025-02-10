@@ -86,7 +86,7 @@ def check_auth(request: Request):
         return JSONResponse(user)
     return None
 
-@app.get("/namespaces")
+@app.get("/api/namespaces")
 def read_namespaces(refresh=False):    
     ret = []
     global namespaces
