@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
@@ -11,6 +11,7 @@ from pyiceberg.table import Table
 import time, os, requests
 from threading import Timer
 from pydantic import BaseModel
+from authz import Authz
 
 AUTH_ENABLED        = True if os.getenv("PUBLIC_AUTH_ENABLED", '')=='true' else False
 CLIENT_ID           = os.getenv("PUBLIC_OPENID_CLIENT_ID", '')
@@ -100,12 +101,18 @@ def read_namespaces(refresh=False):
 def read_table_snapshots(table: Table = Depends(get_table)):
     return lv.get_snapshot_data(table)
 
-@app.get("/api/tables/{table_id}/partitions")
-def read_table_partitions(table: Table = Depends(get_table)):
+@app.get("/api/tables/{table_id}/partitions", status_code=status.HTTP_200_OK)
+def read_table_partitions(request: Request, response: Response, table: Table = Depends(get_table)):
+    az = Authz(request, response)
+    if not az.has_access(table):        
+        return
     return lv.get_partition_data(table)
 
-@app.get("/api/tables/{table_id}/sample")    
-def read_sample_data(table: Table = Depends(get_table), partition=None, sample_limit=100):
+@app.get("/api/tables/{table_id}/sample", status_code=status.HTTP_200_OK)    
+def read_sample_data(request: Request, response: Response, table: Table = Depends(get_table), partition=None, sample_limit=100):
+    az = Authz(request, response)
+    if not az.has_access(table):        
+        return
     return lv.get_sample_data(table, partition, sample_limit)
 
 @app.get("/api/tables/{table_id}/schema")    
