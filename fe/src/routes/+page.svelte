@@ -1,7 +1,7 @@
 
 <script>
     import { env } from '$env/dynamic/public';    
-    import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton } from "carbon-components-svelte";
+    import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
     import JsonTable from '../lib/components/JsonTable.svelte';
@@ -38,6 +38,7 @@
     let properties_loading = false;
     let data_change = [];
     let data_change_loading = false;
+    let access_allowed = true;
 
     async function get_data(table_id, feature){
         let loading = true;
@@ -57,9 +58,16 @@
                     //queryParams: { table_id: tableId },
                 }
             );            
+            const statusCode = res.status;
             if (res.ok) {
                 const data = await res.json();                                   
                 return JSON.parse(data);                
+            }
+            else if (statusCode == 403){
+                console.log("No Access");
+                error = "No Access"
+                access_allowed = false;
+                return error
             }
             else{
                 console.error("Failed to fetch data:", res.statusText);
@@ -243,7 +251,9 @@
 
             <TabContent><br/> 
                 {#if partitions_loading}
-                    <Loading withOverlay={false} small />      
+                    <Loading withOverlay={false} small />   
+                {:else if !access_allowed}   
+                    <ToastNotification hideCloseButton title="No Access" subtitle="You don't have access to the table data"></ToastNotification>
                 {:else if partitions.length > 0}
                     <VirtualTable data={partitions} columns={partitions[0]} rowHeight={35}/>  
                     <br />
@@ -265,7 +275,9 @@
 
             <TabContent><br/>
                 {#if sample_data_loading}
-                    <Loading withOverlay={false} small />      
+                    <Loading withOverlay={false} small />    
+                {:else if !access_allowed}   
+                    <ToastNotification hideCloseButton title="No Access" subtitle="You don't have access to the table data"></ToastNotification>  
                 {:else if sample_data.length > 0}
                     <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35}/>  
                     <br />
