@@ -15,7 +15,7 @@
 		Modal,
 		Button,
 		InlineLoading,
-		TextInput
+		Search
 	} from 'carbon-components-svelte';	
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
@@ -23,7 +23,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from "$app/navigation";
-	import { Logout, UserAvatarFilledAlt, Renew, Search } from 'carbon-icons-svelte';
+	import { Logout, UserAvatarFilledAlt, Renew } from 'carbon-icons-svelte';
 
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
@@ -46,7 +46,9 @@
 	let loading = false;
 	const tableLoadedEvent = new EventTarget();
 	let namespaces = data.namespaces;
-	let searchQuery = '';
+	let searchNamespaceQuery = '';
+	let searchTableQuery = '';
+	let search_expanded = false;
 	/**
 	 * @param {null} namespace
 	 */
@@ -89,7 +91,11 @@
 	}
 	
 	$: filteredNamespaces = namespaces.filter(ns => 
-        ns.text.toLowerCase().includes(searchQuery.toLowerCase())
+        ns.text.toLowerCase().includes(searchNamespaceQuery.toLowerCase())
+    );
+
+	$: filteredTables = tables.filter(tb => 
+        tb.text.toLowerCase().includes(searchTableQuery.toLowerCase())
     );
 
 	function waitForTables() {
@@ -278,19 +284,18 @@
 	</SideNavItems>
 </SideNav>
 {#if navpop}
-	<Modal size="sm" passiveModal bind:open={navpop} modalHeading="Namespaces" on:open on:close>
-		<div class="renew">
-			<TextInput bind:value={searchQuery} placeholder="Search namespaces..." class="search-box" icon={Search} />
-
+	<Modal size="sm" passiveModal bind:open={navpop} modalHeading="Namespaces" on:open on:close>		
+		<div class="renew">			
+			<Search expandable bind:search_expanded on:expand on:collapse bind:value={searchNamespaceQuery} placeholder="Search namespaces..." class="search-box" />
 			{#if nav_loading}
 			<div class="loading-container">
                 <InlineLoading description="Refreshing..." />
             </div>
 			{:else}
-				<Button iconDescription="Refresh namespaces" icon={Renew} size="sm" on:click={refreshNamespaces} />
+				<Button iconDescription="Refresh namespaces" icon={Renew} size="default" on:click={refreshNamespaces} />
 			{/if}		
 		</div>
-		
+		<div class="table-container">
 		<table>
 			{#each filteredNamespaces as ns}                
 			<tr>
@@ -304,23 +309,29 @@
 			</tr>
 		{/each}            
 		</table>
+		</div>
 	</Modal>
 {/if}
 {#if tabpop}
 	<Modal size="sm" passiveModal bind:open={tabpop} modalHeading={"Tables in "+namespace} on:open on:close>
-		<table>
-			{#each tables as tabs}                
-			<tr>
-				<td>{tabs.id}</td> <td><div 
-					role="button"
-					tabindex="0" 
-					on:keypress={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') setTable(tabs.text);
-					}}
-					on:click={setTable(tabs.text)}> <a href={'#'}>{tabs.text}</a></div></td>		  	
-			</tr>
-		{/each}            
-		</table>
+		<div class="renew">	
+		<Search expandable bind:search_expanded on:expand on:collapse bind:value={searchTableQuery} placeholder="Search tables..." class="search-box" />
+		</div>
+		<div class="table-container">
+			<table>
+				{#each filteredTables as tabs}                
+				<tr>
+					<td>{tabs.id}</td> <td><div 
+						role="button"
+						tabindex="0" 
+						on:keypress={(e) => {
+							if (e.key === 'Enter' || e.key === ' ') setTable(tabs.text);
+						}}
+						on:click={setTable(tabs.text)}> <a href={'#'}>{tabs.text}</a></div></td>		  	
+				</tr>
+				{/each}            
+			</table>
+		</div>
 	</Modal>
 {/if}
 <Modal
@@ -365,7 +376,12 @@
       padding: 8px;
       text-align: left;
     }  
-
+	.table-container {
+		height: 500px;
+        max-height: 500px; 
+        overflow-y: auto;
+        padding: 10px;
+    }
 	.renew {
         display: flex;
         justify-content: flex-end;
