@@ -4,6 +4,7 @@
     import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
+    import { sample_limit } from '$lib/stores';
     import JsonTable from '../lib/components/JsonTable.svelte';
     import { Loading } from 'carbon-components-svelte';
     import { BarChartSimple } from '@carbon/charts-svelte'    
@@ -146,8 +147,11 @@
         }
         try {
             if(selected==3 && sample_data.length == 0){
-                sample_data_loading = true;          
-                sample_data = await get_data(namespace+"."+table, "sample");  
+                sample_data_loading = true;              
+                if($sample_limit>0){                     
+                    sample_data = await get_data(namespace+"."+table, "sample?sample_limit="+$sample_limit); 
+                }  
+                else{sample_data = await get_data(namespace+"."+table, "sample"); }                 
                 sample_data_loading = false;  
             }
         } catch (err) {
