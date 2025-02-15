@@ -20,6 +20,7 @@
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
 	import { selectedTable } from '$lib/stores';
+	import { sample_limit } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from "$app/navigation";
@@ -34,6 +35,7 @@
   	// Extract query parameters
   	let q_ns = $page.url.searchParams.get('namespace');
   	let q_tab = $page.url.searchParams.get('table');
+	let q_sample_limit = $page.url.searchParams.get('sample_limit');
 
 	export let data;
 	let isSideNavOpen = true;
@@ -147,7 +149,11 @@
 		if(q_tab){
 			setTableDynamic();
 			resetQueryParams();
-		}		
+		}	
+		if(q_sample_limit){
+			console.log(q_sample_limit);
+			sample_limit.set(parseInt(q_sample_limit));
+		}	
   	});
 
 	function setNamespace(nsp){
@@ -161,8 +167,7 @@
 		tabpop = false;
 	}
 	function setTableDynamic(){
-		waitForTables().then((result) => {
-			console.log("The value is available:", result); 
+		waitForTables().then((result) => {			
 			const id = findItemIdByText(tables, q_tab);			
 			console.log(id);		
 			dropdown2_selectedId = id;				
@@ -188,13 +193,15 @@
 			const originalParams = state ? `?${decodeURIComponent(state)}` : "";
 			const params = new URLSearchParams(decodeURIComponent(state));
       		q_ns = params.get("namespace");
-      		q_tab = params.get("table");			
+      		q_tab = params.get("table");
+			q_sample_limit = params.get("sample_limit");			
 			if(q_ns){
 				setNamespace(q_ns);		
 				if(q_tab){
 					setTableDynamic();
 				}	
 			}
+			if(q_sample_limit){sample_limit.set(parseInt(q_sample_limit));}
 			goto("/"); 
 		} else {
 			console.error("Error exchanging token");
