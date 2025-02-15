@@ -109,14 +109,14 @@ def read_table_snapshots(table: Table = Depends(get_table)):
     return lv.get_snapshot_data(table)
 
 @app.get("/api/tables/{table_id}/partitions", status_code=status.HTTP_200_OK)
-def read_table_partitions(request: Request, response: Response, table: Table = Depends(get_table)):
-    if not authz_.has_access(request, response, table):        
+def read_table_partitions(request: Request, response: Response, table_id: str, table: Table = Depends(get_table)):
+    if not authz_.has_access(request, response, table_id):        
         return
     return lv.get_partition_data(table)
 
 @app.get("/api/tables/{table_id}/sample", status_code=status.HTTP_200_OK)    
-def read_sample_data(request: Request, response: Response, table: Table = Depends(get_table), partition=None, sample_limit: int=100):
-    if not authz_.has_access(request, response, table):        
+def read_sample_data(request: Request, response: Response, table_id: str, table: Table = Depends(get_table), partition=None, sample_limit: int=100):
+    if not authz_.has_access(request, response, table_id):        
         return
     return lv.get_sample_data(table, partition, sample_limit)
 
