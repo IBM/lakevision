@@ -11,7 +11,7 @@ from pyiceberg.table import Table
 import time, os, requests
 from threading import Timer
 from pydantic import BaseModel
-from authz import Authz
+import importlib
 
 AUTH_ENABLED        = True if os.getenv("PUBLIC_AUTH_ENABLED", '')=='true' else False
 CLIENT_ID           = os.getenv("PUBLIC_OPENID_CLIENT_ID", '')
@@ -21,8 +21,15 @@ CLIENT_SECRET       = os.getenv("OPEN_ID_CLIENT_SECRET", '')
 TOKEN_URL           = OPENID_PROVIDER_URL+"/token"
 SECRET_KEY          = os.getenv("SECRET_KEY", "@#dsfdds1112")
 
+AUTHZ_MODULE = os.getenv("AUTHZ_MODULE_NAME", "authz")
+AUTHZ_CLASS  = os.getenv("AUTHZ_CLASS_NAME", "Authz")
+
 app = FastAPI()
 lv = LakeView()
+
+authz_module = importlib.import_module(AUTHZ_MODULE)
+authz_class = getattr(authz_module, AUTHZ_CLASS)
+authz_ = authz_class()
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.add_middleware(
@@ -103,15 +110,13 @@ def read_table_snapshots(table: Table = Depends(get_table)):
 
 @app.get("/api/tables/{table_id}/partitions", status_code=status.HTTP_200_OK)
 def read_table_partitions(request: Request, response: Response, table: Table = Depends(get_table)):
-    az = Authz(request, response)
-    if not az.has_access(table):        
+    if not authz_.has_access(request, response, table):        
         return
     return lv.get_partition_data(table)
 
 @app.get("/api/tables/{table_id}/sample", status_code=status.HTTP_200_OK)    
-def read_sample_data(request: Request, response: Response, table: Table = Depends(get_table), partition=None, sample_limit=100):
-    az = Authz(request, response)
-    if not az.has_access(table):        
+def read_sample_data(request: Request, response: Response, table: Table = Depends(get_table), partition=None, sample_limit: int=100):
+    if not authz_.has_access(request, response, table):        
         return
     return lv.get_sample_data(table, partition, sample_limit)
 
