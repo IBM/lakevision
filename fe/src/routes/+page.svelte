@@ -147,15 +147,17 @@
         }
         try {
             if(selected==3 && sample_data.length == 0){
-                sample_data_loading = true;              
+                sample_data_loading = true;
                 if($sample_limit>0){                     
-                    sample_data = await get_data(namespace+"."+table, "sample?sample_limit="+$sample_limit); 
+                    sample_data = await get_data(namespace+"."+table, "sample?sample_limit="+$sample_limit);
                 }  
-                else{sample_data = await get_data(namespace+"."+table, "sample"); }                 
-                sample_data_loading = false;  
+                else{
+                    sample_data = await get_data(namespace+"."+table, "sample");
+                }
+                sample_data_loading = false;
             }
         } catch (err) {
-            error = err.message; 
+            error = err.message;
             sample_data_loading = false;  
         }        
         try {
@@ -173,7 +175,7 @@
  
     function set_copy_url(){
         url = window.location.origin;
-        url = url+"/?namespace="+namespace+"&table="+table;
+        url = url+"/?namespace="+namespace+"&table="+table+"&sample_limit=100";
     }
 
     function reset(table){
@@ -283,9 +285,9 @@
                 {:else if !access_allowed}   
                     <ToastNotification hideCloseButton title="No Access" subtitle="You don't have access to the table data"></ToastNotification>  
                 {:else if sample_data.length > 0}
-                    <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35}/>  
+                    <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35}/>
                     <br />
-                    Sample items: {sample_data.length}              
+                    Sample items: {sample_data.length}
                 {/if}
             </TabContent>
 
