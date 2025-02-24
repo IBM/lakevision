@@ -17,7 +17,7 @@
     onMount(() => {
         console.log(user);
         user = user.split('@')[0]
-        websocket = new WebSocket(`${env.PUBLIC_CHAT_SERVER}/${user}`); 
+        websocket = new WebSocket(`${env.PUBLIC_CHAT_SERVER}/${user}`);
 
         websocket.onopen = () => {
             isConnected = true; // Connection is open

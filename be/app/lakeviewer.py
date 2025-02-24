@@ -112,6 +112,7 @@ class LakeView():
             df = daft.read_iceberg(table)        
             df = df.limit(limit)
             paT = df.to_arrow()        
+            return self.paTable_to_dataTable(paT)
         else:
             row_filter = self.get_row_filter(partition, table) 
             tab_scan = table.scan(limit=limit, row_filter = row_filter)        
@@ -119,9 +120,16 @@ class LakeView():
                     return None
             else:            
                 try:
-                    rbr = tab_scan.to_arrow_batch_reader()
+                    rbr = tab_scan.to_arrow_batch_reader()                      
+                    batches = [] 
+                    row_count = 0
                     for batch in rbr:
-                        return self.paTable_to_dataTable(batch)                   
+                        if row_count < limit:
+                            batches.append(batch)
+                            row_count += batch.num_rows
+                        else:
+                            break               
+                    paT = pa.Table.from_batches(batches)         
                 except PermissionError:                
                     if row_filter == AlwaysTrue():
                         row_filter = ''
