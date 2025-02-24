@@ -25,12 +25,14 @@
 	import { page } from '$app/stores';
 	import { goto } from "$app/navigation";
 	import { Logout, UserAvatarFilledAlt, Renew } from 'carbon-icons-svelte';
+	import Chat from '../lib/components/Chat.svelte';
 
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
 	let namespace;
 	let navpop = false;
 	let tabpop = false;
+	let chatpop = false;
 	let nav_loading = false;
   	// Extract query parameters
   	let q_ns = $page.url.searchParams.get('namespace');
@@ -288,6 +290,8 @@
 		</ComboBox>
 		<br />
 		<SideNavLink on:click={() => ( tabpop=true)}>Show All</SideNavLink>
+		<br /><br /><br /><br />
+		<SideNavLink on:click={() => ( chatpop=true)}>Chat</SideNavLink>
 	</SideNavItems>
 </SideNav>
 {#if navpop}
@@ -338,6 +342,9 @@
 				</tr>
 				{/each}            
 			</table>
+			{#if filteredTables.length == 0}
+				No data
+			{/if}
 		</div>
 	</Modal>
 {/if}
@@ -351,6 +358,12 @@
   on:close
   on:submit={login}
 />
+
+<Modal passiveModal bind:open={chatpop} modalHeading="Chat with your Datasets" on:open on:close>
+	{#if user}
+		<Chat user={user} />
+	{/if}
+</Modal>
 <slot></slot>
 
 <style>

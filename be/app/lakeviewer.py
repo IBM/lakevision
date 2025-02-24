@@ -2,10 +2,11 @@ from pyiceberg import catalog
 from pyiceberg.catalog import Identifier
 from pyiceberg.expressions import AlwaysTrue
 from typing import List, Union
-import json, os, time
+import json, os, time, re
 import pandas as pd
 import pyarrow as pa
 import daft
+#import duckdb
 import numpy as np
 import google.auth
 from google.auth.transport.requests import Request
@@ -24,6 +25,21 @@ class LakeView():
                 })
         else:
             self.catalog = catalog.load_catalog("default")
+        s3_access_key_id        = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID")
+        s3_secret_access_key    = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__SECRET_ACCESS_KEY")
+        s3_endpoint             = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__ENDPOINT")
+        if s3_endpoint:
+            s3_endpoint = re.sub(r"^(http|https)://", "", s3_endpoint)
+
+        self.duckdb_s3_conf = f"""
+            INSTALL httpfs;
+            LOAD httpfs;              
+            INSTALL iceberg;
+            LOAD iceberg;          
+            SET s3_endpoint='{s3_endpoint}';
+            SET s3_access_key_id='{s3_access_key_id}';
+            SET s3_secret_access_key='{s3_secret_access_key}';
+        """
         self.namespace_options = []        
 
     def get_namespaces(_self, include_nested: bool = True):
@@ -86,13 +102,40 @@ class LakeView():
         cols = df_flattened.to_json(orient='records', default_handler = BinaryEncoder)                
         return cols
 
-    def get_sample_data(self, table, partition, limit=50):
-        #table = self.catalog.load_table(table_id)        
-        df = daft.read_iceberg(table)
-        df = df.limit(limit)
-        paT = df.to_arrow()
-        return self.paTable_to_dataTable(paT) 
+    def get_sample_data(self, table, partition, limit=50):         
+        fields = table.schema().fields
+        struct_field = False
+        for field in fields:
+            if 'map' in str(field.field_type) and 'struct' in str(field.field_type):
+                struct_field = True
+        if not struct_field:
+            df = daft.read_iceberg(table)        
+            df = df.limit(limit)
+            paT = df.to_arrow()        
+        else:
+            row_filter = self.get_row_filter(partition, table) 
+            tab_scan = table.scan(limit=limit, row_filter = row_filter)        
+            if table.metadata.current_snapshot_id is None:
+                    return None
+            else:            
+                try:
+                    rbr = tab_scan.to_arrow_batch_reader()
+                    for batch in rbr:
+                        return self.paTable_to_dataTable(batch)                   
+                except PermissionError:                
+                    if row_filter == AlwaysTrue():
+                        row_filter = ''
+            return self.paTable_to_dataTable(paT)  
+        
         '''
+        else:
+            mtl = table.metadata_location  
+            mtl = mtl.replace('s3a://', 's3://')
+            print(mtl)
+            con = duckdb.connect() 
+            con.execute(self.duckdb_s3_conf)
+            paT = con.execute(f"SELECT * FROM iceberg_scan('{mtl}') limit {limit}").arrow()            
+        ##
         row_filter = self.get_row_filter(partition, table) 
         tab_scan = table.scan(limit=limit, row_filter = row_filter)        
         if table.metadata.current_snapshot_id is None:
