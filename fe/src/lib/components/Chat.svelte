@@ -7,12 +7,28 @@
     import IbmGranite from "carbon-icons-svelte/lib/IbmGranite.svelte";
     import { Tag } from "carbon-components-svelte";
     import { env } from '$env/dynamic/public';
+    import JsonTable from './JsonTable.svelte';
     export let user;
 
     let messages = [];
     let message = '';
     let websocket;
     let isConnected = false;
+    let messagesContainer; // Ref to the messages div
+
+    $: formattedMessages = messages.map(msg => { 
+        try {
+            const res = JSON.parse(msg); 
+            console.log(res);
+            return res;
+        } catch (e) {
+            return { message: msg }; // If not JSON, treat as plain text
+        }
+    });
+
+    $: if (formattedMessages.length > 0 && messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
     onMount(() => {
         console.log(user);
@@ -58,17 +74,27 @@
             sendMessage();
         }
     }
+    
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
 </script>
 <div class="header">
     <Button on:click={clearMessages} iconDescription="Clear Messages" icon={TrashCan} disabled={messages.length === 0} ></Button>
 </div>
 <div class="chat-container">
     
-    <div class="messages">
-        {#each messages as msg}
-            <p>{msg}</p>
+    
+    <div class="messages" bind:this={messagesContainer}>
+        {#each formattedMessages as msg}                            
+        <div class="message" class:user={msg?.sender === user}>
+            <p>{msg.sender}: {msg.message}</p>            
+            <!--<span class="timestamp">{formatTime(msg.timestamp)}</span>-->
+        </div>
         {/each}
-    </div>    
+    </div>
     <div class="input-area">        
         <TextInput bind:value={message} placeholder="Type your message..." on:keydown={handleKeyDown}/>       
         <Button on:click={sendMessage} iconDescription="Send Message" icon={Send} size="sm"></Button>            
@@ -100,5 +126,30 @@
         display: flex;
         justify-content: flex-end; /* Align to the right */
         margin-bottom: 10px;
+    }   
+    .message {
+        display: flex;
+        justify-content: flex-start; /* Default alignment */
+    }
+
+    .message p {
+        /* ... other styles ... */
+        width: fit-content; /* Or flex-basis: auto; */
+        max-width: 80%; /* Prevent overflow */
+        word-wrap: break-word; /* Allow long words to wrap */
+    }
+    /**
+    .message p { /* Target the <p> tag inside .message 
+        /* ... other styles for the <p> tag (e.g., padding, margin) 
+        word-wrap: break-word; 
+        max-width: 80%; 
+    } 
+    **/   
+    .message.user { /* Style for user's messages */
+        background-color: #e2e5e6; /* Lighter blue */
+        justify-content: flex-end; 
+    }
+    .message.user p { /* Target the <p> tag inside user messages */
+        font-style: italic; /* Apply italics only to user messages */
     }
 </style>
