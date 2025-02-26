@@ -43,6 +43,7 @@
 	let isSideNavOpen = true;
 	let user;
 	let AUTH_ENABLED = false;
+	let CHAT_ENABLED = false;
 	/**
 	 * @type {never[]}
 	 */
@@ -136,6 +137,7 @@
 
 	onMount(() => {		
 		if(env.PUBLIC_AUTH_ENABLED=='true'){AUTH_ENABLED=true;}
+		if(env.PUBLIC_CHAT_ENABLED=='true'){CHAT_ENABLED=true;}
 		if(AUTH_ENABLED && user==null){
 			const params = new URLSearchParams(window.location.search);
 			const code = params.get("code");
@@ -290,8 +292,10 @@
 		</ComboBox>
 		<br />
 		<SideNavLink on:click={() => ( tabpop=true)}>Show All</SideNavLink>
-		<br /><br /><br /><br />
-		<SideNavLink on:click={() => ( chatpop=true)}>Chat</SideNavLink>
+		{#if CHAT_ENABLED}
+			<br /><br /><br /><br />
+			<SideNavLink on:click={() => ( chatpop=true)}>Chat</SideNavLink>
+		{/if}
 	</SideNavItems>
 </SideNav>
 {#if navpop}
