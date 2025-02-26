@@ -1,15 +1,16 @@
 <script>
 	import { Modal } from 'carbon-components-svelte';
+	import { Search } from 'carbon-components-svelte';
 	import { createVirtualizer } from '@tanstack/svelte-virtual';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
 
-	export let data = []; // Array of row objects
-	export let columns = []; // Array of columns
+	export let data = [];
+	export let columns = [];
 	export let rowHeight = 40; // Height of each row
     export let tableHeight = 500;
     export let defaultColumnWidth = 200;
-
+	export let enableSearch = false;
 	let containerRef;
 
 	// Sorting state
@@ -22,6 +23,7 @@
 	let popoverPosition = { top: 0, left: 0 };
     let columnWidths = {};  
     let startX, startWidth, columnKey;
+	let searchQuery = ''; 
 
     onMount(() => {
         const storedWidths = localStorage.getItem('columnWidths');
@@ -33,8 +35,12 @@
     //in case columnWidths need to be reset from localstorage
     let reset_cw = $page.url.searchParams.get('reset_cw');
 
-	// Sorted data
-	$: sortedData = [...data].sort((a, b) => {
+	$: filteredData = data.filter(row => 
+    Object.values(row).some(value => 
+        String(value).toLowerCase().includes(searchQuery.toLowerCase())
+    )
+	);
+	$: displayedData = [...filteredData].sort((a, b) => {
 		if (!sortKey) return 0;
 		if (a[sortKey] < b[sortKey]) return sortOrder === 'asc' ? -1 : 1;
 		if (a[sortKey] > b[sortKey]) return sortOrder === 'asc' ? 1 : -1;
@@ -43,7 +49,7 @@
 
 	// Virtualizer instance
 	$: rowVirtualizer = createVirtualizer({
-		count: sortedData.length,
+		count: filteredData.length,
 		getScrollElement: () => containerRef,
 		estimateSize: () => rowHeight
 	});
@@ -73,18 +79,28 @@
 		popoverContent = '';
 	}
 
-    function formatValue(value) {
-        //return JSON.stringify(value);
-        if (Array.isArray(value)) {
-            return value.join(' \n ');
-        } else if (typeof value === 'object' && value !== null) {        
-            return Object.entries(value)
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(', \n');
-        }        
-        return value;
-    }
-        // Handle the start of the drag event (mouse down)
+	function formatValue(value, depth = 0) {
+    	if (value === null || value === undefined) {
+	        return "";
+		}    
+    	if (Array.isArray(value)) {
+        	return value
+            .map(item => formatValue(item, depth + 1)) // Recursively format each item
+            .join('\n');
+    	} else if (typeof value === 'object') {
+        return Object.entries(value)
+            .map(([key, val]) => {
+                // Indentation for readability in nested objects
+                const indent = "  ".repeat(depth);
+                return `${indent}${key}: ${formatValue(val, depth + 1)}`;
+            })
+            .join(',\n');
+    	}
+    
+    	return value;
+	}
+
+    // Handle the start of the drag event (mouse down)
     function handleMouseDown(event, key) {
         startX = event.clientX;
         startWidth = columnWidths[key] || 200; // Default width is 200px if no custom width
@@ -120,9 +136,20 @@
         localStorage.removeItem('columnWidths');
         return '';
     }
+
+    $: filteredData = data.filter(row => 
+        Object.values(row).some(value => 
+            String(value).toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
 </script>
 {#if reset_cw }
     {resetColumnWidths()}
+{/if}
+{#if enableSearch}
+<div class="search-container">
+    <Search bind:value={searchQuery} placeholder="Search..." expandable/>
+</div>
 {/if}
 <div bind:this={containerRef} class="table-container" style="height: {tableHeight}px">
 	<!-- Sticky Header -->
@@ -164,13 +191,13 @@
 						tabindex="0"
 						on:keypress={(e) => {
 							if (e.key === 'Enter' || e.key === ' ')
-								handleDoubleClick(event, sortedData[virtualRow.index]?.[key]);
+								handleDoubleClick(event, displayedData[virtualRow.index]?.[key]);
 						}}
 						class="cell"
-						on:dblclick={(event) => handleDoubleClick(event, sortedData[virtualRow.index]?.[key])}                        
+						on:dblclick={(event) => handleDoubleClick(event, displayedData[virtualRow.index]?.[key])}                        
                         style="width: {columnWidths[key] || defaultColumnWidth}px"
 					>
-						{formatValue(sortedData[virtualRow.index]?.[key])}
+						{formatValue(displayedData[virtualRow.index]?.[key])}
 					</div>
 				{/each}
 			</div>
@@ -228,4 +255,9 @@
 		position: absolute;
 		width: fit-content;
 	}
+	.search-container {
+        display: flex;
+        justify-content: flex-end; 
+        margin-bottom: 10px;
+    }
 </style>
