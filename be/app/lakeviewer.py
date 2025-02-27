@@ -6,6 +6,7 @@ import json, os, time, re
 import pandas as pd
 import pyarrow as pa
 import daft
+import pyarrow.compute as pc
 #import duckdb
 import numpy as np
 import google.auth
@@ -24,22 +25,7 @@ class LakeView():
                     "gcs.oauth2.token": access_token.token,        
                 })
         else:
-            self.catalog = catalog.load_catalog("default")
-        s3_access_key_id        = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__ACCESS_KEY_ID")
-        s3_secret_access_key    = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__SECRET_ACCESS_KEY")
-        s3_endpoint             = os.environ.get("PYICEBERG_CATALOG__DEFAULT__S3__ENDPOINT")
-        if s3_endpoint:
-            s3_endpoint = re.sub(r"^(http|https)://", "", s3_endpoint)
-
-        self.duckdb_s3_conf = f"""
-            INSTALL httpfs;
-            LOAD httpfs;              
-            INSTALL iceberg;
-            LOAD iceberg;          
-            SET s3_endpoint='{s3_endpoint}';
-            SET s3_access_key_id='{s3_access_key_id}';
-            SET s3_secret_access_key='{s3_secret_access_key}';
-        """
+            self.catalog = catalog.load_catalog("default")        
         self.namespace_options = []        
 
     def get_namespaces(_self, include_nested: bool = True):
@@ -110,8 +96,9 @@ class LakeView():
                 struct_field = True
         if not struct_field:
             df = daft.read_iceberg(table)        
-            df = df.limit(limit)
-            paT = df.to_arrow()        
+            df = df.limit(limit)            
+            paT = df.to_arrow()   
+            paT = self.convertTimestamp(paT)     
             return self.paTable_to_dataTable(paT)
         else:
             row_filter = self.get_row_filter(partition, table) 
@@ -240,15 +227,23 @@ class LakeView():
     # Flattening the tuple array into separate columns
     def flatten_tuples(self, row):    
         return {k: v for k, v in row}
+    
+    def convertTimestamp(self, paT: pa.Table):
+        for col in paT.schema.names:
+            if isinstance(paT.schema.field(col).type, pa.TimestampType):
+                paT = paT.set_column(
+                    paT.schema.get_field_index(col),
+                    col,
+                    pc.strftime(paT[col], format="%Y-%m-%d %H:%M:%S")
+                )
+        return paT
         
 def get_gcp_access_token(service_account_file, scopes):
     """
     Retrieves an access token from Google Cloud Platform using service account credentials.
-
     Args:
         service_account_file: Path to the service account JSON key file.
         scopes: List of OAuth scopes required for your application.
-
     Returns:
         The access token as a string.
     """

@@ -104,6 +104,14 @@ def read_namespaces(refresh=False):
         ret.append({"id": idx, "text": ".".join(ns)})        
     return ret
 
+@app.get("/api/namespaces/{namespace}/special-properties")
+def read_namespaces_special_properties(namespace: str):
+    return authz_.get_namespace_special_properties(namespace)
+
+@app.get("/api/tables/{table_id}/special-properties")
+def read_table_special_properties(table_id: str):
+    return authz_.get_table_special_properties(table_id)
+
 @app.get("/api/tables/{table_id}/snapshots")
 def read_table_snapshots(table: Table = Depends(get_table)):
     return lv.get_snapshot_data(table)

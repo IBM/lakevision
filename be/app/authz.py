@@ -19,3 +19,9 @@ class Authz(object):
         if False:
             self.response.status_code = status.HTTP_403_FORBIDDEN
         return True
+    
+    def get_namespace_special_properties(self, namespace):
+        pass
+
+    def get_table_special_properties(self, table_id):
+        pass
