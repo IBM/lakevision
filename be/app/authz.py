@@ -21,7 +21,7 @@ class Authz(object):
         return True
     
     def get_namespace_special_properties(self, namespace):
-        pass
+        return ['']
 
     def get_table_special_properties(self, table_id):
         pass
