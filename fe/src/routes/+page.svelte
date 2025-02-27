@@ -1,18 +1,19 @@
 
 <script>
     import { env } from '$env/dynamic/public';    
-    import { Tile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification } from "carbon-components-svelte";
+    import { Tile, ExpandableTile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
     import { sample_limit } from '$lib/stores';
     import JsonTable from '../lib/components/JsonTable.svelte';
     import { Loading } from 'carbon-components-svelte';
-    import { BarChartSimple } from '@carbon/charts-svelte'    
+    import { BarChartSimple } from '@carbon/charts-svelte'        
     import '@carbon/charts-svelte/styles.css'
     import options from './options'        	
     import VirtualTable from '../lib/components/VirtTable3.svelte';
 
     let namespace;
+    let ns_props;
     let table;
     let error = "";
     let url = "";
@@ -21,6 +22,7 @@
     $: {
         selectedNamespce.subscribe(value => {namespace = value; });
         selectedTable.subscribe(value => {table = value; });
+        if(namespace) ns_props = get_namespace_special_properties(namespace);
     }
 
     let partitions = [];
@@ -40,6 +42,18 @@
     let data_change = [];
     let data_change_loading = false;
     let access_allowed = true;
+
+    async function get_namespace_special_properties(namespace_name){        
+        ns_props = await fetch(
+            `/api/namespaces/${namespace_name}/special-properties`,{
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Page-Session-ID': pageSessionId,
+                },                    
+            }
+        ).then(res => res.json());
+        return ns_props;
+    }
 
     async function get_data(table_id, feature){
         let loading = true;
@@ -197,15 +211,13 @@
         properties = [];
         //selected = 0;
     }
-   
 </script>
 
 <Content>    
-    <Tile><h4>Namespace: {namespace} </h4> <p align="right"> <CopyButton text={url} on:click={set_copy_url} iconDescription="Copy table link" feedback="Table link copied" /></p>
-        <h4>Table:     {table}</h4>
-    </Tile>    
-  
-    <br />
+    <Tile><h4>Namespace: {namespace}</h4><p align="right"> <CopyButton text={url} on:click={set_copy_url} iconDescription="Copy table link" feedback="Table link copied" /></p>
+          <h4>Table:     {table}</h4>
+    </Tile>  
+    <br />    
     <Tabs bind:selected>
         <Tab label="Summary" />
         <Tab label="Partitions" />
@@ -252,7 +264,10 @@
                         {/if}
                         </Column>
                     </Row>
-                  </Grid>                
+                  </Grid>
+                  <ExpandableTile light>
+                    <div slot="below">{ns_props}</div>
+                  </ExpandableTile>
             </TabContent>
 
             <TabContent><br/> 
