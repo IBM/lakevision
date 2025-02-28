@@ -6,7 +6,10 @@
 		Header,
         HeaderUtilities,
         HeaderActionLink,
+		HeaderPanelLinks,
 		HeaderGlobalAction,
+		HeaderPanelLink,
+		HeaderAction,
 		ComboBox,		
 		SideNav,
 		SideNavItems,		
@@ -15,7 +18,8 @@
 		Modal,
 		Button,
 		InlineLoading,
-		Search
+		Search,
+		SideNavDivider
 	} from 'carbon-components-svelte';	
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
@@ -42,6 +46,7 @@
 	export let data;
 	let isSideNavOpen = true;
 	let user;
+	let isHeaderActionOpen = false;
 	let AUTH_ENABLED = false;
 	let CHAT_ENABLED = false;
 	/**
@@ -54,6 +59,10 @@
 	let searchNamespaceQuery = '';
 	let searchTableQuery = '';
 	let search_expanded = false;
+	let extra_link;
+	let extra_link_text;
+	let company = "Apache Iceberg";
+	let platform = "Lakevision"
 	/**
 	 * @param {null} namespace
 	 */
@@ -138,6 +147,9 @@
 	onMount(() => {		
 		if(env.PUBLIC_AUTH_ENABLED=='true'){AUTH_ENABLED=true;}
 		if(env.PUBLIC_CHAT_ENABLED=='true'){CHAT_ENABLED=true;}
+		if(env.PUBLIC_EXTRA_LINK){ extra_link	= env.PUBLIC_EXTRA_LINK; extra_link_text=env.PUBLIC_EXTRA_LINK_TEXT; }
+		if(env.PUBLIC_COMPANY_NAME) company 	= env.PUBLIC_COMPANY_NAME;
+		if(env.PUBLIC_PLATFORM_NAME) platform 	= env.PUBLIC_PLATFORM_NAME;
 		if(AUTH_ENABLED && user==null){
 			const params = new URLSearchParams(window.location.search);
 			const code = params.get("code");
@@ -244,7 +256,7 @@
 
 </script>
 
-<Header company="Apache Iceberg" platformName="Lakevision" >
+<Header company="{company}" platformName="{platform}" >
 	<svelte:fragment slot="skip-to-content">
 		<SkipToContent />
 	</svelte:fragment>
@@ -257,6 +269,13 @@
 		{#if AUTH_ENABLED}
 			<HeaderGlobalAction iconDescription={user}  icon={UserAvatarFilledAlt}/>		
 			<HeaderGlobalAction iconDescription='Logout'  icon={Logout} on:click={(event) => handleLogout(event)}/>
+		{/if}
+		{#if extra_link}
+		<HeaderAction bind:isOpen={isHeaderActionOpen} >
+			<HeaderPanelLinks>
+				<HeaderPanelLink text="{extra_link_text}" href="{extra_link}" target="_blank"></HeaderPanelLink>
+			</HeaderPanelLinks>
+		</HeaderAction>
 		{/if}
     </HeaderUtilities>
 </Header>
