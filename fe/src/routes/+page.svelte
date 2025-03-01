@@ -331,10 +331,8 @@
                 {/if}           
             </TabContent>
         </svelte:fragment>
-      </Tabs>
-    
+      </Tabs>    
   </Content>
-
 
   <style>
    .tile-content {
@@ -345,9 +343,9 @@
 
   .namespace-table-list {
     display: grid;
-    grid-template-columns: auto 1fr; /* Label width, value takes remaining space */
+    grid-template-columns: auto 1fr; 
     gap: 25px;
-    margin: 0; /* Remove default margin */
+    margin: 0; 
     font-size: 1.3em;
   }
 
@@ -356,7 +354,7 @@
   }
 
   dd {
-    margin: 0; /* Remove default margin */
+    margin: 0; 
   }
 
   .copy-button-container {
