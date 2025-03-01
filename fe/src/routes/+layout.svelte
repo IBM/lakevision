@@ -10,6 +10,7 @@
 		HeaderGlobalAction,
 		HeaderPanelLink,
 		HeaderAction,
+		HeaderPanelDivider,
 		ComboBox,		
 		SideNav,
 		SideNavItems,		
@@ -270,8 +271,12 @@
 			<HeaderGlobalAction iconDescription={user}  icon={UserAvatarFilledAlt}/>		
 			<HeaderGlobalAction iconDescription='Logout'  icon={Logout} on:click={(event) => handleLogout(event)}/>
 		{/if}
-		{#if extra_link}
+		{#if extra_link || CHAT_ENABLED}
 		<HeaderAction bind:isOpen={isHeaderActionOpen} >
+			<HeaderPanelLinks>				
+				<HeaderPanelLink text="Chat" on:click={() => ( chatpop=true)}></HeaderPanelLink>
+			</HeaderPanelLinks>
+			<HeaderPanelDivider></HeaderPanelDivider>
 			<HeaderPanelLinks>
 				<HeaderPanelLink text="{extra_link_text}" href="{extra_link}" target="_blank"></HeaderPanelLink>
 			</HeaderPanelLinks>
@@ -310,11 +315,7 @@
 			</div>		
 		</ComboBox>
 		<br />
-		<SideNavLink on:click={() => ( tabpop=true)}>Show All</SideNavLink>
-		{#if CHAT_ENABLED}
-			<br /><br /><br /><br />
-			<SideNavLink on:click={() => ( chatpop=true)}>Chat</SideNavLink>
-		{/if}
+		<SideNavLink on:click={() => ( tabpop=true)}>Show All</SideNavLink>		
 	</SideNavItems>
 </SideNav>
 {#if navpop}
