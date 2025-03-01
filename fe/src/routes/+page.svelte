@@ -214,9 +214,24 @@
 </script>
 
 <Content>    
-    <Tile><h4>Namespace: {namespace}</h4><p align="right"> <CopyButton text={url} on:click={set_copy_url} iconDescription="Copy table link" feedback="Table link copied" /></p>
-          <h4>Table:     {table}</h4>
-    </Tile>  
+    <Tile>
+        <div class="tile-content">
+          <dl class="namespace-table-list">
+            <dt>Namespace</dt>
+            <dd>{namespace}</dd>
+            <dt>Table</dt>
+            <dd>{table}</dd>   
+          </dl>          
+        </div>
+        <div class="copy-button-container">
+            <CopyButton
+              text={url}
+              on:click={set_copy_url}
+              iconDescription="Copy table link"
+              feedback="Table link copied"
+            />
+          </div>
+      </Tile>
     <br />    
     <Tabs bind:selected>
         <Tab label="Summary" />
@@ -322,5 +337,30 @@
 
 
   <style>
-   
+   .tile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .namespace-table-list {
+    display: grid;
+    grid-template-columns: auto 1fr; /* Label width, value takes remaining space */
+    gap: 25px;
+    margin: 0; /* Remove default margin */
+    font-size: 1.3em;
+  }
+
+  dt {
+    font-weight: bold;
+  }
+
+  dd {
+    margin: 0; /* Remove default margin */
+  }
+
+  .copy-button-container {
+    display: flex;
+    justify-content: flex-end;
+  }
   </style>
