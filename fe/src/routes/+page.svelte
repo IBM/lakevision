@@ -265,9 +265,11 @@
                         </Column>
                     </Row>
                   </Grid>
-                  <ExpandableTile light>
-                    <div slot="below">{ns_props}</div>
-                  </ExpandableTile>
+                  {#if ns_props}                    
+                    <ExpandableTile light>
+                        <div slot="below">{ns_props}</div>
+                    </ExpandableTile>
+                  {/if}
             </TabContent>
 
             <TabContent><br/> 
