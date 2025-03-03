@@ -36,6 +36,8 @@
 	"dependencies": {
 		"@carbon/charts-svelte": "1.22.0",
 		"@tanstack/svelte-virtual": "^3.11.2",
-		"lodash-es": "^4.17.21"
+		"dompurify": "^3.2.4",
+		"lodash-es": "^4.17.21",
+		"marked": "^15.0.7"
 	}
 }

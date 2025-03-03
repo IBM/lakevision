@@ -7,7 +7,8 @@
     import IbmGranite from "carbon-icons-svelte/lib/IbmGranite.svelte";
     import { Tag } from "carbon-components-svelte";
     import { env } from '$env/dynamic/public';
-    import JsonTable from './JsonTable.svelte';
+    import { marked } from "marked";
+    import DOMPurify from "dompurify";    
     export let user;
 
     let messages = [];
@@ -89,8 +90,8 @@
     
     <div class="messages" bind:this={messagesContainer}>
         {#each formattedMessages as msg}                            
-        <div class="message" class:user={msg?.sender === user}>
-            <p>{msg.sender}: {msg.message}</p>            
+        <div class="message" class:user={msg?.sender === user}>            
+            <div class="markdown">{msg.sender}: {@html DOMPurify.sanitize(marked(msg.message))}</div>         
             <!--<span class="timestamp">{formatTime(msg.timestamp)}</span>-->
         </div>
         {/each}
@@ -124,32 +125,20 @@
     }
     .header {
         display: flex;
-        justify-content: flex-end; /* Align to the right */
+        justify-content: flex-end; 
         margin-bottom: 10px;
     }   
     .message {
         display: flex;
-        justify-content: flex-start; /* Default alignment */
+        justify-content: flex-start; 
     }
-
-    .message p {
-        /* ... other styles ... */
-        width: fit-content; /* Or flex-basis: auto; */
-        max-width: 80%; /* Prevent overflow */
-        word-wrap: break-word; /* Allow long words to wrap */
-    }
-    /**
-    .message p { /* Target the <p> tag inside .message 
-        /* ... other styles for the <p> tag (e.g., padding, margin) 
-        word-wrap: break-word; 
-        max-width: 80%; 
-    } 
-    **/   
+  
     .message.user { /* Style for user's messages */
         background-color: #e2e5e6; /* Lighter blue */
         justify-content: flex-end; 
     }
-    .message.user p { /* Target the <p> tag inside user messages */
-        font-style: italic; /* Apply italics only to user messages */
-    }
+    .markdown {
+    white-space: pre-wrap; 
+    overflow-wrap: break-word; 
+  }  
 </style>
