@@ -6,7 +6,7 @@ fastapi[standard]
 pyarrow>=17.0.0
 uvicorn
 gunicorn
-getdaft
+getdaft>=0.4.6
 packaging
 httpx
 authlib

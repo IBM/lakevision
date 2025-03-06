@@ -88,7 +88,13 @@ class LakeView():
         cols = df_flattened.to_json(orient='records', default_handler = BinaryEncoder)                
         return cols
 
-    def get_sample_data(self, table, partition, limit=50):         
+    def get_sample_data(self, table, partition, limit=50):
+        df = daft.read_iceberg(table)        
+        df = df.limit(limit)            
+        paT = df.to_arrow()   
+        paT = self.convertTimestamp(paT)     
+        return self.paTable_to_dataTable(paT)         
+        '''
         fields = table.schema().fields
         struct_field = False
         for field in fields:
@@ -121,7 +127,7 @@ class LakeView():
                     if row_filter == AlwaysTrue():
                         row_filter = ''
             return self.paTable_to_dataTable(paT)  
-        
+        '''
         '''
         else:
             mtl = table.metadata_location  
@@ -168,7 +174,8 @@ class LakeView():
             #print(result['total-records'])
             ret['Total records'] = result['total-records']
             ret['Total file size'] = result['total-files-size']
-            ret['Total data files'] = result['total-data-files']
+            if 'total-data-files' in result:
+                ret['Total data files'] = result['total-data-files']
             ret['Total delete files'] = result['total-delete-files']        
             ret['Total snapshots'] = paTable.num_rows 
         else:
