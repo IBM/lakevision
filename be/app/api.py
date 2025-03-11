@@ -58,6 +58,7 @@ oauth.register(
 page_session_cache = {}
 CACHE_EXPIRATION = 4 * 60 # 4 minutes
 namespaces = lv.get_namespaces()
+ns_tables = lv.get_all_table_names(namespaces)
 
 def load_table(table_id: str) -> Table: #Generator[Table, None, None]:    
     try:
@@ -157,14 +158,22 @@ def root(request: Request):
     return "Hello, no auth enabled"
        
 @app.get("/api/tables")
-def read_tables(namespace: str = None, user=Depends(check_auth)):    
+def read_tables(namespace: str = None, refresh=False, user=Depends(check_auth)):    
     if AUTH_ENABLED and not user:
         return RedirectResponse("/")
     ret = []
     if not namespace:
+        global namespaces
+        global ns_tables        
+        if refresh:            
+            namespaces = lv.get_namespaces()
+            ns_tables = lv.get_all_table_names(namespaces)
+        for namespace, tables in ns_tables.items():           
+            for idx, table in enumerate(tables):            
+                ret.append({"id": idx, "text": table, "namespace": ".".join(namespace)})
         return ret
     for idx, table in enumerate(lv.get_tables(namespace)):
-        ret.append({"id": idx, "text": table[-1]})        
+        ret.append({"id": idx, "text": table[-1], "namespace": namespace})        
     return ret
 
 @app.get("/api/login")
