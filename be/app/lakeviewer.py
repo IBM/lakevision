@@ -55,6 +55,18 @@ class LakeView():
         tables.sort()
         return tables
     
+    def get_all_table_names(self, namespaces: List[str]):
+        all_tables = {}
+        for namespace in namespaces:
+            tabs = self.catalog.list_tables(namespace)            
+            ns_tab = []
+            for tab in tabs:
+                ns_tab.append(tab[-1])
+                ns_tab.sort()
+            all_tables[namespace] = ns_tab            
+            print(all_tables)
+        return all_tables
+
     def load_table(self, table_id: str):
         table = self.catalog.load_table(table_id)
         return table

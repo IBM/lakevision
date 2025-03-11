@@ -19,8 +19,7 @@
 		Modal,
 		Button,
 		InlineLoading,
-		Search,
-		SideNavDivider
+		Search		
 	} from 'carbon-components-svelte';	
 	import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 	import { selectedNamespce } from '$lib/stores';
@@ -29,7 +28,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from "$app/navigation";
-	import { Logout, UserAvatarFilledAlt, Renew } from 'carbon-icons-svelte';
+	import { Logout, UserAvatarFilledAlt, Renew, FilterRemove } from 'carbon-icons-svelte';
 	import Chat from '../lib/components/Chat.svelte';
 
 	let dropdown1_selectedId = '';
@@ -59,7 +58,6 @@
 	let namespaces = data.namespaces;
 	let searchNamespaceQuery = '';
 	let searchTableQuery = '';
-	let search_expanded = false;
 	let extra_link;
 	let extra_link_text;
 	let company = "Apache Iceberg";
@@ -69,13 +67,18 @@
 	 */
 	async function get_tables(namespace) {
 		loading = true;
-		if (!namespace) {
-			loading = false;
-			// @ts-ignore
-			selectedNamespce.set("");
-            // @ts-ignore
+		if (!namespace) {		
+			selectedNamespce.set("");            
             selectedTable.set("");
             dropdown2_selectedId = '';
+			const res = await fetch(`/api/tables`);
+			console.log(res.ok);
+			if (res.ok) {
+				tables = await res.json();
+			} else {
+				console.error('Failed to fetch data:', res.statusText);
+			}			
+			loading = false;
 			return;
 		}
 		try {
@@ -101,6 +104,17 @@
 			if (res.ok) {
 				const data = await res.json();            
 				namespaces =  data			
+			}  		
+		}finally{nav_loading = false;}
+	}
+
+	async function refreshTables(){
+		nav_loading = true;
+		try {
+			const res = await fetch("/api/tables?refresh=true");	
+			if (res.ok) {
+				const data = await res.json();
+				tables =  data;
 			}  		
 		}finally{nav_loading = false;}
 	}
@@ -164,7 +178,7 @@
 			}
 		}
 		if(q_tab){
-			setTableDynamic();
+			setTableDynamic(q_tab);
 			resetQueryParams();
 		}	
 		if(q_sample_limit){
@@ -183,9 +197,9 @@
 		dropdown2_selectedId = id;	
 		tabpop = false;
 	}
-	function setTableDynamic(){
+	function setTableDynamic(table){
 		waitForTables().then((result) => {			
-			const id = findItemIdByText(tables, q_tab);			
+			const id = findItemIdByText(tables, table);			
 			console.log(id);		
 			dropdown2_selectedId = id;				
 		});
@@ -215,7 +229,7 @@
 			if(q_ns){
 				setNamespace(q_ns);		
 				if(q_tab){
-					setTableDynamic();
+					setTableDynamic(q_tab);
 				}	
 			}
 			if(q_sample_limit){sample_limit.set(parseInt(q_sample_limit));}
@@ -254,7 +268,18 @@
 			left: rect.left + window.scrollX
 		};		
 	}
+	// Group tables by namespace
+	function groupByNamespace(tables) {
+	    return tables.reduce((acc, tab) => {
+	        (acc[tab.namespace] = acc[tab.namespace] || []).push(tab);
+	        return acc;
+	    }, {});
+	}
 
+	function resetNsAndTableSelection(){		
+		dropdown1_selectedId = '';
+		get_tables(null);
+	}
 </script>
 
 <Header company="{company}" platformName="{platform}" >
@@ -321,13 +346,15 @@
 {#if navpop}
 	<Modal size="sm" passiveModal bind:open={navpop} modalHeading="Namespaces" on:open on:close>		
 		<div class="renew">			
-			<Search expandable bind:search_expanded on:expand on:collapse bind:value={searchNamespaceQuery} placeholder="Search namespaces..." class="search-box" />
+			<Search on:expand on:collapse bind:value={searchNamespaceQuery} placeholder="Search namespaces..." class="search-box" />
+		</div>
+		<div class="renew"> 
 			{#if nav_loading}
 			<div class="loading-container">
                 <InlineLoading description="Refreshing..." />
             </div>
 			{:else}
-				<Button iconDescription="Refresh namespaces" icon={Renew} size="default" on:click={refreshNamespaces} />
+				<Button iconDescription="Refresh namespaces" icon={Renew} size="sm" on:click={refreshNamespaces} />
 			{/if}		
 		</div>
 		<div class="table-container">
@@ -348,22 +375,44 @@
 	</Modal>
 {/if}
 {#if tabpop}
-	<Modal size="sm" passiveModal bind:open={tabpop} modalHeading={"Tables in "+namespace} on:open on:close>
+	<Modal size="sm" passiveModal bind:open={tabpop} modalHeading={"Tables in: "+namespace} on:open on:close>
 		<div class="renew">	
-		<Search expandable bind:search_expanded on:expand on:collapse bind:value={searchTableQuery} placeholder="Search tables..." class="search-box" />
+		<Search  on:expand on:collapse bind:value={searchTableQuery} placeholder="Search tables..." class="search-box" />						
+		</div>
+		<div class="renew">  			
+			{#if nav_loading}
+			<div class="loading-container">
+                <InlineLoading description="Refreshing..." />
+            </div>
+			{:else}
+				{#if namespace}
+					<Button iconDescription="Clear filter" icon={FilterRemove} size="sm" on:click={() =>{resetNsAndTableSelection();}} />
+				{:else}
+					<Button iconDescription="Refresh tables" icon={Renew} size="sm" on:click={refreshTables} />
+				{/if}
+			{/if}
 		</div>
 		<div class="table-container">
 			<table>
-				{#each filteredTables as tabs}                
-				<tr>
-					<td>{tabs.id}</td> <td><div 
-						role="button"
-						tabindex="0" 
-						on:keypress={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') setTable(tabs.text);
-						}}
-						on:click={setTable(tabs.text)}> <a href={'#'}>{tabs.text}</a></div></td>		  	
-				</tr>
+				{#each Object.entries(groupByNamespace(filteredTables)) as [namespace, rows]}
+					<thead>
+						<tr>
+							<th colspan="2">{namespace}</th> 
+						</tr>
+					</thead>
+					<tbody>
+						{#each rows as tabs}
+							<tr>
+								<td>{tabs.id}</td>
+								<td><div role="button"
+									tabindex="0" 
+									on:keypress={(e) => {
+										if (e.key === 'Enter' || e.key === ' '){setNamespace(tabs.namespace); setTableDynamic(tabs.text); tabpop=false;}
+									}}
+									on:click={() => {setNamespace(tabs.namespace);  setTableDynamic(tabs.text); setTable(tabs.text); }}> <a href={'#'}>{tabs.text}</a></div></td>		  	
+							</tr>
+						{/each}
+					</tbody>
 				{/each}            
 			</table>
 			{#if filteredTables.length == 0}
@@ -419,6 +468,8 @@
       border: 0.25px solid #ccc;
       padding: 8px;
       text-align: left;
+	  max-width: 200px;
+	  word-wrap: break-word;
     }  
 	.table-container {
 		height: 500px;
@@ -429,7 +480,8 @@
 	.renew {
         display: flex;
         justify-content: flex-end;
-        margin-bottom: 10px;
+        margin-bottom: 10px;		
+		padding-right: 10px;
     }
 	.loading-container {
         margin-left: auto; 
