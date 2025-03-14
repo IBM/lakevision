@@ -6,11 +6,29 @@ It provides all the namespaces available in your Lakehouse as well as all the ta
 
 This can be very helpful in finding data layout in your Apache Iceberg based Lakehouse, details, structure of each table, location of data and metadata files, change history, and a lot more. It heavily uses pyiceberg and has very few other dependencies.
 
-
-
 https://github.com/user-attachments/assets/7c71d61f-ffea-497a-97d0-451dec662b96
 
 
+
+## Features
+
+- Search and view all namespaces in your Lakehouse
+
+- Search and view all tables in your Lakehouse
+
+- Schema, properties, partition specs, summary of each table
+
+- Every partition-wise record count, file count, size etc.
+
+- Show all snapshots with details
+
+- Graphical summary of records additions over time
+
+- OIDC/OAuth based authentication support
+
+- Pluggable authorization feature
+
+- Pluggable Chat with Lakehouse capability
 
 ## How to install and use:
 
@@ -40,12 +58,21 @@ Tested on Linux and Mac with Iceberg REST catalog, but will support any catalog 
 
 ## Roadmap
 
-Provide each partition details like name, filecount, number of records, file sizes etc. - Done
+- Provide Chat with Lakehouse capability using LLM.
 
-Provide ability to see sample data based on partitions. - Done
+- Provide overall reports on tables with maximum snapshots, maximum partitions, maximum columns, size etc.
 
-Add insights on tables.
-Add timetravel capability.
+- Provide recommendations on optimizing table performance.
+
+- Provide limited SQL capabilities on tables.
+
+- Provide each partition details like name, filecount, number of records, file sizes etc. - Done
+
+- Provide ability to see sample data based on partitions. - Done
+
+- Add insights on tables.
+
+- Add timetravel capability.
 
 Much more.....
 
