@@ -1,7 +1,6 @@
 
 <script>
-    import { env } from '$env/dynamic/public';    
-    import { Tile, ExpandableTile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification } from "carbon-components-svelte";
+    import { Tile, ExpandableTile, Content, Tabs, Tab, TabContent, Grid, Row, Column, CopyButton, ToastNotification, DataTableSkeleton } from "carbon-components-svelte";
     import { selectedNamespce } from '$lib/stores';
     import { selectedTable } from '$lib/stores';
     import { sample_limit } from '$lib/stores';
@@ -37,6 +36,8 @@
     let summary_loading = false;
     let partition_specs = [];
     let partition_specs_loading = false;
+    let sort_order = [];
+    let sort_order_loading = false;
     let properties = [];
     let properties_loading = false;
     let data_change = [];
@@ -75,7 +76,7 @@
             );            
             const statusCode = res.status;
             if (res.ok) {
-                const data = await res.json();                                   
+                const data = await res.json();                  
                 return JSON.parse(data);                
             }
             else if (statusCode == 403){
@@ -139,6 +140,16 @@
             error = err.message; 
             partition_specs_loading = false;  
         }
+        try {
+            if(selected==0 ){
+                sort_order_loading = true;          
+                sort_order = await get_data(namespace+"."+table, "sort-order");  
+                sort_order_loading = false; 
+            }
+        } catch (err) {
+            error = err.message; 
+            sort_order_loading = false;  
+        }
         try {        
             if(selected==1 && partitions.length == 0){
                 partitions_loading = true; 
@@ -198,6 +209,7 @@
         sample_data = [];
         data_change = [];
         partitions_loading = false;
+        sort_order_loading = false;
         snapshots_loading = false;
         sample_data_loading = false;
         data_change_loading = false;
@@ -209,6 +221,7 @@
         summary = [];
         partition_specs = [];
         properties = [];
+        sort_order = [];
         //selected = 0;
     }
 </script>
@@ -240,19 +253,19 @@
         <Tab label="Sample Data" /> 
         <Tab label="Insights" />        
         <svelte:fragment slot="content">
-            <TabContent><br/>
+            <TabContent><br/>                
                 <Grid>
                     <Row>
                       <Column aspectRatio="2x1"> 
                         <br />
-                        Summary
+                        <h5>Summary</h5> 
                         <br />                        
                         <br />                        
                         <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                  
                         </Column>
                         <Column aspectRatio="2x1">    
                             <br />                        
-                            Schema
+                            <h5>Schema</h5>
                             <br />
                             <br />
                             {#if !schema_loading && schema.length > 0}
@@ -263,7 +276,7 @@
                     <Row>
                         <Column aspectRatio="2x1">   
                             <br />                    
-                        Properties
+                            <h5>Properties</h5>
                         <br />
                         <br />
                         {#if !properties_loading && properties}
@@ -272,10 +285,17 @@
                      </Column>
                       <Column aspectRatio="2x1">  
                         <br />
-                        Partition Specs
+                        <h5>Partition Specs</h5>                        
                         <br />  <br />                        
                         {#if !partition_specs_loading && partition_specs}                        
                             <JsonTable jsonData={partition_specs} orient="table" /> 
+                        {/if}
+
+                        <br />
+                        <h5>Sort Order</h5>
+                        <br />  <br />                        
+                        {#if !sort_order_loading && sort_order}                        
+                            <JsonTable jsonData={sort_order} orient="table" /> 
                         {/if}
                         </Column>
                     </Row>
@@ -335,6 +355,7 @@
   </Content>
 
   <style>
+
    .tile-content {
     display: flex;
     flex-direction: column;

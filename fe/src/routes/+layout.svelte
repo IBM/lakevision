@@ -324,7 +324,7 @@
 		</div>		
 	</ComboBox>
 	<br />
-	<SideNavLink on:click={() => ( navpop=true)}>Show All</SideNavLink>
+	<SideNavLink on:click={() => ( navpop=true)}>Show All Namespaces</SideNavLink>
 	
 		<br /> <br /><br /> <br /><br /> <br />
 		<ComboBox
@@ -340,7 +340,7 @@
 			</div>		
 		</ComboBox>
 		<br />
-		<SideNavLink on:click={() => ( tabpop=true)}>Show All</SideNavLink>		
+		<SideNavLink on:click={() => ( tabpop=true)}>Show All Tables</SideNavLink>		
 	</SideNavItems>
 </SideNav>
 {#if navpop}
