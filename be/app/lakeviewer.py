@@ -64,7 +64,6 @@ class LakeView():
                 ns_tab.append(tab[-1])
                 ns_tab.sort()
             all_tables[namespace] = ns_tab            
-            print(all_tables)
         return all_tables
 
     def load_table(self, table_id: str):
@@ -214,6 +213,17 @@ class LakeView():
         pa_table = pa.Table.from_pandas(df)
         return self.paTable_to_dataTable(paTable=pa_table)
     
+    def get_sort_order(self, table):
+        sorts = []
+        for fld in table.sort_order().fields:    
+            ret = {}
+            ret["Field"] = table.schema().find_column_name(fld.source_id)
+            ret["Transform"] = str(fld.transform)
+            ret["Direction"] = fld.direction.name
+            ret["Null Order"] = fld.null_order.name
+            sorts.append(ret)
+        return json.dumps(sorts)
+
     def get_row_filter(self, partition, table):
         if partition is None or len(partition) == 0:
             return AlwaysTrue()

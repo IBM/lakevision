@@ -145,6 +145,10 @@ def read_properties_data(table: Table = Depends(get_table)):
 def read_partition_specs(table: Table = Depends(get_table)):
     return lv.get_partition_specs(table)
 
+@app.get("/api/tables/{table_id}/sort-order")    
+def read_sort_order(table: Table = Depends(get_table)):
+    return lv.get_sort_order(table)
+
 @app.get("/api/tables/{table_id}/data-change")    
 def read_data_change(table: Table = Depends(get_table)):
     return lv.get_data_change(table)
