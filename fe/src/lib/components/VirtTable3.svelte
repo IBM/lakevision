@@ -35,11 +35,31 @@
     //in case columnWidths need to be reset from localstorage
     let reset_cw = $page.url.searchParams.get('reset_cw');
 
-	$: filteredData = data.filter(row => 
-    Object.values(row).some(value => 
-        String(value).toLowerCase().includes(searchQuery.toLowerCase())
-    )
-	);
+	$: formattedData = data.map(row => ({
+		original: row,
+		searchString: Object.values(row).map(value => formatForSearch(value)).join(' ')
+	}));
+	
+	function formatForSearch(value) {
+		if (value === null || value === undefined) {
+			return '';
+		}
+		if (Array.isArray(value)) {
+			return value.map(item => formatForSearch(item)).join(' ');
+		} else if (typeof value === 'object') {
+			return Object.entries(value)
+				.map(([key, val]) => `${key}: ${formatForSearch(val)}`)
+				.join(' ');
+		}
+		return String(value).toLowerCase();
+	}
+
+	$: filteredData = formattedData
+		.filter(({ searchString }) =>
+			searchString.includes(searchQuery.toLowerCase())
+		)
+		.map(({ original }) => original);
+
 	$: displayedData = [...filteredData].sort((a, b) => {
 		if (!sortKey) return 0;
 		if (a[sortKey] < b[sortKey]) return sortOrder === 'asc' ? -1 : 1;
@@ -74,11 +94,6 @@
 		};
 	}
 
-	function closePopover() {
-		showPopover = false;
-		popoverContent = '';
-	}
-
 	function formatValue(value, depth = 0) {
     	if (value === null || value === undefined) {
 	        return "";
@@ -89,8 +104,7 @@
             .join('\n');
     	} else if (typeof value === 'object') {
         return Object.entries(value)
-            .map(([key, val]) => {
-                // Indentation for readability in nested objects
+            .map(([key, val]) => {                
                 const indent = "  ".repeat(depth);
                 return `${indent}${key}: ${formatValue(val, depth + 1)}`;
             })
@@ -103,7 +117,7 @@
     // Handle the start of the drag event (mouse down)
     function handleMouseDown(event, key) {
         startX = event.clientX;
-        startWidth = columnWidths[key] || 200; // Default width is 200px if no custom width
+        startWidth = columnWidths[key] || 200;
         columnKey = key;
 
         // Add event listeners for mouse movement and mouse up
@@ -137,11 +151,23 @@
         return '';
     }
 
-    $: filteredData = data.filter(row => 
-        Object.values(row).some(value => 
-            String(value).toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    );
+	function escapeHtml(text) {
+		return String(text)
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
+	function highlightMatch(text, query) {
+		if (!query || !text) return escapeHtml(text);
+
+		const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+		// Escape and replace with highlighted version
+		return escapeHtml(text).replace(regex, '<mark>$1</mark>');
+	}
 </script>
 {#if reset_cw }
     {resetColumnWidths()}
@@ -197,7 +223,7 @@
 						on:dblclick={(event) => handleDoubleClick(event, displayedData[virtualRow.index]?.[key])}                        
                         style="width: {columnWidths[key] || defaultColumnWidth}px"
 					>
-						{formatValue(displayedData[virtualRow.index]?.[key])}
+						{@html highlightMatch(formatValue(displayedData[virtualRow.index]?.[key]), searchQuery)}
 					</div>
 				{/each}
 			</div>
@@ -260,4 +286,10 @@
         justify-content: flex-end; 
         margin-bottom: 10px;
     }
+	:global(mark) {
+		background-color: rgb(254, 254, 0);
+		color: inherit;
+		padding: 0;
+		font-weight: bold;
+	}
 </style>

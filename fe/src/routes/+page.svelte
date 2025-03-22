@@ -11,9 +11,10 @@
     import options from './options'        	
     import VirtualTable from '../lib/components/VirtTable3.svelte';
 
-    let namespace;
-    let ns_props;
+    let namespace;    
     let table;
+    let ns_props;
+    let tab_props;
     let error = "";
     let url = "";
     let pageSessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);       
@@ -22,6 +23,7 @@
         selectedNamespce.subscribe(value => {namespace = value; });
         selectedTable.subscribe(value => {table = value; });
         if(namespace) ns_props = get_namespace_special_properties(namespace);
+        if(namespace && table) tab_props = get_table_special_properties( namespace+"."+table);       
     }
 
     let partitions = [];
@@ -54,6 +56,18 @@
             }
         ).then(res => res.json());
         return ns_props;
+    }
+
+    async function get_table_special_properties(table_id){        
+        tab_props = await fetch(
+            `/api/tables/${table_id}/special-properties`,{
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Page-Session-ID': pageSessionId,
+                },                    
+            }
+        ).then(res => res.json());
+        return tab_props;
     }
 
     async function get_data(table_id, feature){
@@ -104,6 +118,9 @@
             if(selected==0 ){
                 summary_loading = true;          
                 summary = await get_data(namespace+"."+table, "summary");  
+                if('restricted' in tab_props){
+                    summary['Restricted'] = tab_props['restricted'];
+                }
                 summary_loading = false;   
             }           
         } catch (err) {
@@ -256,44 +273,34 @@
             <TabContent><br/>                
                 <Grid>
                     <Row>
-                      <Column aspectRatio="2x1"> 
-                        <br />
-                        <h5>Summary</h5> 
-                        <br />                        
-                        <br />                        
+                      <Column aspectRatio="2x1">                         
+                        <h5>Summary</h5>                     
                         <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                  
                         </Column>
-                        <Column aspectRatio="2x1">    
-                            <br />                        
+                        <Column aspectRatio="2x1">
                             <h5>Schema</h5>
-                            <br />
-                            <br />
                             {#if !schema_loading && schema.length > 0}
-                                <VirtualTable data={schema} columns={schema[0]} rowHeight={37} tableHeight={370} defaultColumnWidth={121}/>
+                                <VirtualTable data={schema} columns={schema[0]} rowHeight={37} tableHeight={360} defaultColumnWidth={121}/>
                             {/if}
                         </Column>
                     </Row>
                     <Row>
                         <Column aspectRatio="2x1">   
-                            <br />                    
+                            <br /><br />                    
                             <h5>Properties</h5>
-                        <br />
-                        <br />
                         {#if !properties_loading && properties}
                             <JsonTable jsonData={properties} orient = "kv"></JsonTable>                                                     
                         {/if}
                      </Column>
                       <Column aspectRatio="2x1">  
-                        <br />
-                        <h5>Partition Specs</h5>                        
-                        <br />  <br />                        
+                        <br /><br />
+                        <h5>Partition Specs</h5>              
                         {#if !partition_specs_loading && partition_specs}                        
                             <JsonTable jsonData={partition_specs} orient="table" /> 
                         {/if}
 
                         <br />
                         <h5>Sort Order</h5>
-                        <br />  <br />                        
                         {#if !sort_order_loading && sort_order}                        
                             <JsonTable jsonData={sort_order} orient="table" /> 
                         {/if}
@@ -313,7 +320,7 @@
                 {:else if !access_allowed}   
                     <ToastNotification hideCloseButton title="No Access" subtitle="You don't have access to the table data"></ToastNotification>
                 {:else if partitions.length > 0}
-                    <VirtualTable data={partitions} columns={partitions[0]} rowHeight={35}/>  
+                    <VirtualTable data={partitions} columns={partitions[0]} rowHeight={35} enableSearch=true/>  
                     <br />
                     Total items: {partitions.length}              
                 {/if}         
@@ -323,7 +330,7 @@
                 {#if snapshots_loading}
                     <Loading withOverlay={false} small />      
                 {:else if snapshots.length > 0}
-                    <VirtualTable data={snapshots} columns={snapshots[0]} rowHeight={35}/>  
+                    <VirtualTable data={snapshots} columns={snapshots[0]} rowHeight={35} enableSearch=true/>  
                     <br />
                     Total items: {snapshots.length}     
                 {:else}
@@ -337,7 +344,7 @@
                 {:else if !access_allowed}   
                     <ToastNotification hideCloseButton title="No Access" subtitle="You don't have access to the table data"></ToastNotification>  
                 {:else if sample_data.length > 0}
-                    <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35}/>
+                    <VirtualTable data={sample_data} columns={sample_data[0]} rowHeight={35} enableSearch=true/>
                     <br />
                     Sample items: {sample_data.length}
                 {/if}
