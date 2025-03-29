@@ -159,6 +159,9 @@
 	if(q_ns){
 		setNamespace(q_ns);			
 	}
+	if(q_tab){
+		setTable(q_tab);
+	}
 
 	$: if(browser){get_tables(formatSelected(dropdown1_selectedId, data.namespaces));}
 	$: if(browser){selectedTable.set(formatSelected(dropdown2_selectedId, tables));}	
