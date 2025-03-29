@@ -53,6 +53,7 @@
 	 * @type {never[]}
 	 */
 	let tables = [];
+	let all_tables = [];
 	let loading = false;
 	const tableLoadedEvent = new EventTarget();
 	let namespaces = data.namespaces;
@@ -67,31 +68,34 @@
 	 */
 	async function get_tables(namespace) {
 		loading = true;
-		if (!namespace) {		
-			selectedNamespce.set("");            
-            selectedTable.set("");
-            dropdown2_selectedId = '';
-			const res = await fetch(`/api/tables`);
-			console.log(res.ok);
-			if (res.ok) {
-				tables = await res.json();
-			} else {
-				console.error('Failed to fetch data:', res.statusText);
-			}			
-			loading = false;
-			return;
-		}
 		try {
-			selectedNamespce.set(namespace);
-            dropdown2_selectedId = '';            
-			const res = await fetch(`/api/tables?namespace=${namespace}`);
-			console.log(res.ok);
-			if (res.ok) {
-				tables = await res.json();
-			} else {
-				console.error('Failed to fetch data:', res.statusText);
-			}			
-		} finally {
+			if (!namespace) {
+				selectedNamespce.set("");
+				selectedTable.set("");
+				dropdown2_selectedId = '';
+				const res = await fetch(`/api/tables`);
+				console.log(res.ok);
+				if (res.ok) {
+					all_tables = await res.json();
+				} else {
+					console.error('Failed to fetch data:', res.statusText);
+				}
+				loading = false;
+				return;
+			}
+			else{
+				selectedNamespce.set(namespace);
+				dropdown2_selectedId = '';
+				const res = await fetch(`/api/tables?namespace=${namespace}`);
+				console.log(res.ok);
+				if (res.ok) {
+					tables = await res.json();
+				} else {
+					console.error('Failed to fetch data:', res.statusText);
+				}
+			}
+		}
+		finally {
 			loading = false; // Stop loading indicator
 			tableLoadedEvent.dispatchEvent(new Event("tablesLoaded"));
 		}
@@ -114,7 +118,7 @@
 			const res = await fetch("/api/tables?refresh=true");	
 			if (res.ok) {
 				const data = await res.json();
-				tables =  data;
+				all_tables =  data;
 			}  		
 		}finally{nav_loading = false;}
 	}
@@ -123,7 +127,7 @@
         ns.text.toLowerCase().includes(searchNamespaceQuery.toLowerCase())
     );
 
-	$: filteredTables = tables.filter(tb => 
+	$: filteredTables = (namespace=='' ? all_tables : tables).filter(tb =>
         tb.text.toLowerCase().includes(searchTableQuery.toLowerCase())
     );
 
@@ -182,7 +186,6 @@
 			resetQueryParams();
 		}	
 		if(q_sample_limit){
-			console.log(q_sample_limit);
 			sample_limit.set(parseInt(q_sample_limit));
 		}	
   	});
@@ -192,19 +195,30 @@
 		dropdown1_selectedId = id;	
 		navpop = false;
 	}
-	function setTable(tab){
-		const id = findItemIdByText(tables, tab);
-		dropdown2_selectedId = id;	
-		tabpop = false;
-	}
+
 	function setTableDynamic(table){
 		waitForTables().then((result) => {			
-			const id = findItemIdByText(tables, table);			
-			console.log(id);		
-			dropdown2_selectedId = id;				
+			const id = findItemIdByText(tables, table);
+			dropdown2_selectedId = id;
+			tabpop = false;
 		});
 	}
 
+	function setTable(table){
+		const id = findItemIdByText(tables, table);
+		dropdown2_selectedId = id;
+		tabpop = false;
+	}
+
+	function setNamespaceAndTable(nsp, tab){
+		if(namespace == nsp){
+			setTable(tab);
+		}
+		else{
+			setNamespace(nsp);
+			setTableDynamic(tab);
+		}
+	}
 	$: {
         selectedNamespce.subscribe(value => {namespace = value; });
 	}
@@ -407,9 +421,9 @@
 								<td><div role="button"
 									tabindex="0" 
 									on:keypress={(e) => {
-										if (e.key === 'Enter' || e.key === ' '){setNamespace(tabs.namespace); setTableDynamic(tabs.text); tabpop=false;}
+										if (e.key === 'Enter' || e.key === ' '){setNamespaceAndTable(tabs.namespace, tabs.text);}
 									}}
-									on:click={() => {setNamespace(tabs.namespace);  setTableDynamic(tabs.text); setTable(tabs.text); }}> <a href={'#'}>{tabs.text}</a></div></td>		  	
+									on:click={() => {setNamespaceAndTable(tabs.namespace, tabs.text);}}> <a href={'#'}>{tabs.text}</a></div></td>
 							</tr>
 						{/each}
 					</tbody>
