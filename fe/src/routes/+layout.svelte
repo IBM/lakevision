@@ -182,7 +182,7 @@
 			}
 		}
 		if(q_tab){
-			setTableDynamic(q_tab);
+			setTable(q_tab);
 			resetQueryParams();
 		}	
 		if(q_sample_limit){
