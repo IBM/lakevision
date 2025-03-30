@@ -107,15 +107,17 @@
         finally {
             loading = false; 
         }  
-    }            
-    
+    }
     let selected = 0; 
     $: reset(table);
+    let callOnce = 0;
 
-    $: (async () => {        
-        if( table === '') return;
+    $: (async () => {
+        if( table === '') return;     
         try {
-            if(selected==0 ){
+            if(selected==0){
+                if (callOnce > 0 ){ callOnce=0; return;}
+                callOnce++;
                 summary_loading = true;          
                 summary = await get_data(namespace+"."+table, "summary");  
                 if('restricted' in tab_props){
@@ -128,7 +130,7 @@
             summary_loading = false;  
         }
         try {
-            if(selected==0 ){
+            if(selected==0){
                 properties_loading = true;          
                 properties = await get_data(namespace+"."+table, "properties");  
                 properties_loading = false;  
@@ -138,7 +140,7 @@
             properties_loading = false;  
         }
         try {
-            if(selected==0 ){
+            if(selected==0){
                 schema_loading = true;          
                 schema = await get_data(namespace+"."+table, "schema");  
                 schema_loading = false;  
@@ -148,7 +150,7 @@
             schema_loading = false;  
         }        
         try {
-            if(selected==0 ){
+            if(selected==0){
                 partition_specs_loading = true;          
                 partition_specs = await get_data(namespace+"."+table, "partition-specs");  
                 partition_specs_loading = false; 
@@ -158,7 +160,7 @@
             partition_specs_loading = false;  
         }
         try {
-            if(selected==0 ){
+            if(selected==0){
                 sort_order_loading = true;          
                 sort_order = await get_data(namespace+"."+table, "sort-order");  
                 sort_order_loading = false; 
@@ -212,9 +214,9 @@
         } catch (err) {
             error = err.message; 
             data_change_loading = false;  
-        }        
+        }
     })();
- 
+
     function set_copy_url(){
         url = window.location.origin;
         url = url+"/?namespace="+namespace+"&table="+table+"&sample_limit=100";
