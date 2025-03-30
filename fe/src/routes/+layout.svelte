@@ -33,7 +33,7 @@
 
 	let dropdown1_selectedId = '';
 	let dropdown2_selectedId = '';
-	let namespace;
+	let namespace='';
 	let navpop = false;
 	let tabpop = false;
 	let chatpop = false;
@@ -63,18 +63,15 @@
 	let extra_link_text;
 	let company = "Apache Iceberg";
 	let platform = "Lakevision"
+	let cc = 0;
 	/**
 	 * @param {null} namespace
 	 */
 	async function get_tables(namespace) {
 		loading = true;
 		try {
-			if (!namespace) {
-				selectedNamespce.set("");
-				selectedTable.set("");
-				dropdown2_selectedId = '';
-				const res = await fetch(`/api/tables`);
-				console.log(res.ok);
+			if (!namespace) {				
+				const res = await fetch(`/api/tables`);				
 				if (res.ok) {
 					all_tables = await res.json();
 				} else {
@@ -86,8 +83,7 @@
 			else{
 				selectedNamespce.set(namespace);
 				dropdown2_selectedId = '';
-				const res = await fetch(`/api/tables?namespace=${namespace}`);
-				console.log(res.ok);
+				const res = await fetch(`/api/tables?namespace=${namespace}`);				
 				if (res.ok) {
 					tables = await res.json();
 				} else {
@@ -156,11 +152,24 @@
 		window.history.replaceState(null, '', url);
 	}
 	
-	if(q_ns){
-		setNamespace(q_ns);			
+	if(q_tab){
+		setNamespaceAndTable(q_ns, q_tab);
 	}
 	
-	$: if(browser){get_tables(formatSelected(dropdown1_selectedId, data.namespaces));}
+	$: if(browser){
+		if(dropdown1_selectedId  && cc == 0 && !dropdown2_selectedId) {			
+			get_tables(formatSelected(dropdown1_selectedId, data.namespaces));
+			cc++;
+		} else if (dropdown1_selectedId && dropdown2_selectedId){
+			cc = 0;
+		}
+		else if((!dropdown1_selectedId && !dropdown2_selectedId) || !dropdown1_selectedId){
+			cc = 0;
+			selectedNamespce.set(""); 
+			selectedTable.set("");
+			dropdown2_selectedId = ''; 
+		}
+	}
 	$: if(browser){selectedTable.set(formatSelected(dropdown2_selectedId, tables));}	
 
 	onMount(() => {		
@@ -181,16 +190,10 @@
 				login();
 			}
 		}
-		if(q_tab){
-			setTableDynamic(q_tab);
-			resetQueryParams();
-		}	
-		if(q_sample_limit){
-			sample_limit.set(parseInt(q_sample_limit));
-		}	
   	});
 
 	function setNamespace(nsp){
+		dropdown2_selectedId ='';
 		const id = findItemIdByText(data.namespaces, nsp);
 		dropdown1_selectedId = id;	
 		navpop = false;
@@ -204,9 +207,9 @@
 		});
 	}
 
-	function setTable(table){
+	function setTable(table){		
 		const id = findItemIdByText(tables, table);
-		dropdown2_selectedId = id;
+		dropdown2_selectedId = id;		
 		tabpop = false;
 	}
 
@@ -244,10 +247,10 @@
 				setNamespace(q_ns);		
 				if(q_tab){
 					setTableDynamic(q_tab);
-				}	
+				}
 			}
 			if(q_sample_limit){sample_limit.set(parseInt(q_sample_limit));}
-			goto("/"); 
+			goto("/");
 		} else {
 			console.error("Error exchanging token");
 		}
@@ -292,7 +295,7 @@
 
 	function resetNsAndTableSelection(){		
 		dropdown1_selectedId = '';
-		get_tables(null);
+		get_tables('');
 	}
 </script>
 
@@ -354,7 +357,7 @@
 			</div>		
 		</ComboBox>
 		<br />
-		<SideNavLink on:click={() => ( tabpop=true)}>Show All Tables</SideNavLink>		
+		<SideNavLink on:click={() => { get_tables(''); tabpop = true; }} >Show All Tables</SideNavLink>
 	</SideNavItems>
 </SideNav>
 {#if navpop}
@@ -429,9 +432,13 @@
 					</tbody>
 				{/each}            
 			</table>
-			{#if filteredTables.length == 0}
-				No data
-			{/if}
+			{#if loading}
++                Loading....
++           {:else}
++              {#if filteredTables.length == 0}
+                  No data
++              {/if}
+            {/if}
 		</div>
 	</Modal>
 {/if}
