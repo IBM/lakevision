@@ -10,6 +10,7 @@
     import '@carbon/charts-svelte/styles.css'
     import options from './options'        	
     import VirtualTable from '../lib/components/VirtTable3.svelte';
+    import { goto } from "$app/navigation";
 
     let namespace;    
     let table;
@@ -98,7 +99,9 @@
                 error = "No Access"
                 access_allowed = false;
                 return error
-            }
+            }else if (res.status === 401) {
+                goto("/api/login?namespace="+namespace+"&table="+table+"&sample_limit=100");
+			}
             else{
                 console.error("Failed to fetch data:", res.statusText);
                 error = res.statusText;
