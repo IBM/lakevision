@@ -86,6 +86,11 @@
 				const res = await fetch(`/api/tables?namespace=${namespace}`);				
 				if (res.ok) {
 					tables = await res.json();
+				}else if (res.status === 401) {
+					// Session expired
+					//CustomEvent eve = new CustomEvent('session-expired');
+					//window.dispatchEvent();
+					handleLogout();
 				} else {
 					console.error('Failed to fetch data:', res.statusText);
 				}
@@ -104,7 +109,9 @@
 			if (res.ok) {
 				const data = await res.json();            
 				namespaces =  data			
-			}  		
+			}else if (res.status === 401) {
+					handleLogout();
+			}
 		}finally{nav_loading = false;}
 	}
 
@@ -115,7 +122,9 @@
 			if (res.ok) {
 				const data = await res.json();
 				all_tables =  data;
-			}  		
+			}else if (res.status === 401) {
+					handleLogout();
+			} 		
 		}finally{nav_loading = false;}
 	}
 	
@@ -433,11 +442,13 @@
 				{/each}            
 			</table>
 			{#if loading}
-+                Loading....
-+           {:else}
-+              {#if filteredTables.length == 0}
+				<div class="loading-container">
+					<InlineLoading description="Loading..." />
+				</div>
+           {:else}
+              {#if filteredTables.length == 0}
                   No data
-+              {/if}
+              {/if}
             {/if}
 		</div>
 	</Modal>
@@ -473,12 +484,12 @@
 	}
     :global(.bx--side-nav__navigation) {
     background-color: #161616; 
-  }
+	}
 
-  :global(.bx--side-nav__link .bx--side-nav__icon svg) {
-    fill: #fff; 
-  }
-  
+	:global(.bx--side-nav__link .bx--side-nav__icon svg) {
+		fill: #ffffff; 
+	}
+
     table {
       width: 100%;
       border-collapse: collapse;

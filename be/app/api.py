@@ -31,7 +31,7 @@ authz_module = importlib.import_module(AUTHZ_MODULE)
 authz_class = getattr(authz_module, AUTHZ_CLASS)
 authz_ = authz_class()
 
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=7200) # 7200 = 2 hrs
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -57,8 +57,8 @@ oauth.register(
 
 page_session_cache = {}
 CACHE_EXPIRATION = 4 * 60 # 4 minutes
-namespaces = lv.get_namespaces()
-ns_tables = lv.get_all_table_names(namespaces)
+namespaces = None
+ns_tables = None
 
 def load_table(table_id: str) -> Table: #Generator[Table, None, None]:    
     try:
@@ -76,7 +76,7 @@ def get_table(request: Request, table_id: str):
     if AUTH_ENABLED:
         user = check_auth(request)
         if not user:
-            raise HTTPException(status_code=503, detail="User Not logged in")
+            raise HTTPException(status_code=401, detail="User Not logged in")
     page_session_id = request.headers.get("X-Page-Session-ID")    
     if not page_session_id:
         raise HTTPException(status_code=400, detail="Missing X-Page-Session-ID header")
@@ -164,7 +164,7 @@ def root(request: Request):
 @app.get("/api/tables")
 def read_tables(namespace: str = None, refresh=False, user=Depends(check_auth)):    
     if AUTH_ENABLED and not user:
-        return RedirectResponse("/")
+        raise HTTPException(status_code=401, detail="User Not logged in")
     ret = []
     if not namespace:
         global namespaces
@@ -226,6 +226,11 @@ def schedule_cleanup():
     clean_cache()
     Timer(60, schedule_cleanup).start()
 
+# refresh namespaces and tables every 65 mins
+def refresh_namespace_and_tables():
+    read_tables(refresh=True, user='maintenance')    
+    Timer(3900, refresh_namespace_and_tables).start()
+
 schedule_cleanup()
-    
+refresh_namespace_and_tables()
 
