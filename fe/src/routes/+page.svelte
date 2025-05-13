@@ -123,7 +123,7 @@
                 callOnce++;
                 summary_loading = true;          
                 summary = await get_data(namespace+"."+table, "summary");  
-                if('restricted' in tab_props){
+                if(tab_props && 'restricted' in tab_props){
                     summary['Restricted'] = tab_props['restricted'];
                 }
                 summary_loading = false;   
