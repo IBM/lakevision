@@ -12,6 +12,7 @@ import time, os, requests
 from threading import Timer
 from pydantic import BaseModel
 import importlib
+import logging
 
 AUTH_ENABLED        = True if os.getenv("PUBLIC_AUTH_ENABLED", '')=='true' else False
 CLIENT_ID           = os.getenv("PUBLIC_OPENID_CLIENT_ID", '')
@@ -23,6 +24,16 @@ SECRET_KEY          = os.getenv("SECRET_KEY", "@#dsfdds1112")
 
 AUTHZ_MODULE = os.getenv("AUTHZ_MODULE_NAME", "authz")
 AUTHZ_CLASS  = os.getenv("AUTHZ_CLASS_NAME", "Authz")
+
+class LVException(Exception):
+    def __init__(self, name: str, message: str):
+        self.name = name
+        self.message = message
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
 
 app = FastAPI()
 lv = LakeView()
@@ -60,16 +71,23 @@ CACHE_EXPIRATION = 4 * 60 # 4 minutes
 namespaces = None
 ns_tables = None
 
+@app.exception_handler(LVException)
+async def lv_exception_handler(request: Request, exc: LVException):
+    return JSONResponse(
+        status_code=418,
+        content={"message": exc.message, "name": exc.name},
+    )
+
 def load_table(table_id: str) -> Table: #Generator[Table, None, None]:    
     try:
-        print(f"Loading table {table_id}")
+        logging.info(f"Loading table {table_id}")
         table = lv.load_table(table_id)
         return table  # This makes it a generator
     except Exception as e:
         raise HTTPException(status_code=404, detail="Table not found")
     finally:
         # Optional cleanup
-        print(f"Finished with loading table {table_id}")
+        logging.info(f"Finished with loading table {table_id}")
 
 # Dependency to load the table only once
 def get_table(request: Request, table_id: str):
@@ -92,6 +110,7 @@ def get_table(request: Request, table_id: str):
 def check_auth(request: Request):
     user = request.session.get("user")
     if user:
+        logging.info(f"Authenticated: {user}")
         return JSONResponse(user)
     return None
 
@@ -123,11 +142,17 @@ def read_table_partitions(request: Request, response: Response, table_id: str, t
         return
     return lv.get_partition_data(table)
 
+
 @app.get("/api/tables/{table_id}/sample", status_code=status.HTTP_200_OK)    
-def read_sample_data(request: Request, response: Response, table_id: str, table: Table = Depends(get_table), partition=None, sample_limit: int=100):
+def read_sample_data(request: Request, response: Response, table_id: str, sql = None, table: Table = Depends(get_table), sample_limit: int=100):
     if not authz_.has_access(request, response, table_id):        
         return
-    return lv.get_sample_data(table, partition, sample_limit)
+    try:    
+        res =  lv.get_sample_data(table, sql, sample_limit)
+        return res
+    except Exception as e:
+        logging.error(str(e))
+        raise LVException("err", str(e))
 
 @app.get("/api/tables/{table_id}/schema")    
 def read_schema_data(table: Table = Depends(get_table)):
@@ -197,8 +222,7 @@ def get_token(request: Request, tokenReq: TokenRequest):
         "client_secret": CLIENT_SECRET,
         "redirect_uri": REDIRECT_URI,
     }    
-    response = requests.post(TOKEN_URL, data=data)
-    #print(response.json())
+    response = requests.post(TOKEN_URL, data=data)    
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to exchange code for token")
     r2 = requests.get(f"{OPENID_PROVIDER_URL}/userinfo?access_token={response.json()['access_token']}")
