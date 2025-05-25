@@ -110,7 +110,6 @@ def get_table(request: Request, table_id: str):
 def check_auth(request: Request):
     user = request.session.get("user")
     if user:
-        logging.info(f"Authenticated: {user}")
         return JSONResponse(user)
     return None
 

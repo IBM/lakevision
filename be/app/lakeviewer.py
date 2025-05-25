@@ -105,8 +105,14 @@ class LakeView():
         df = daft.read_iceberg(table)         
         if sql:
             logging.info(f"SQL is {sql}")
-            sql = parse_one(sql).from_("df").sql()
+            #sql = parse_one(sql).from_("df").sql()
+            namespace = table.catalog.namespace_to_string(table.catalog.namespace_from(table.name()))
+            if 'default.' in namespace:
+                namespace = namespace.replace('default.', '')
+            table_name = table.catalog.table_name_from(table.name())            
+            sql = sql.replace(f"{namespace}.{table_name}", "df")
             logging.info(sql)
+            sql_ = parse_one(sql)
             df = daft.sql(sql)
             curr_snapshot = table.current_snapshot()
             if (
@@ -130,63 +136,6 @@ class LakeView():
         paT = self.convertTimestamp(paT)     
         return self.paTable_to_dataTable(paT)         
        
-
-        '''
-        fields = table.schema().fields
-        struct_field = False
-        for field in fields:
-            if 'map' in str(field.field_type) and 'struct' in str(field.field_type):
-                struct_field = True
-        if not struct_field:
-            df = daft.read_iceberg(table)        
-            df = df.limit(limit)            
-            paT = df.to_arrow()   
-            paT = self.convertTimestamp(paT)     
-            return self.paTable_to_dataTable(paT)
-        else:
-            row_filter = self.get_row_filter(partition, table) 
-            tab_scan = table.scan(limit=limit, row_filter = row_filter)        
-            if table.metadata.current_snapshot_id is None:
-                    return None
-            else:            
-                try:
-                    rbr = tab_scan.to_arrow_batch_reader()                      
-                    batches = [] 
-                    row_count = 0
-                    for batch in rbr:
-                        if row_count < limit:
-                            batches.append(batch)
-                            row_count += batch.num_rows
-                        else:
-                            break               
-                    paT = pa.Table.from_batches(batches)         
-                except PermissionError:                
-                    if row_filter == AlwaysTrue():
-                        row_filter = ''
-            return self.paTable_to_dataTable(paT)  
-        '''
-        '''
-        else:
-            mtl = table.metadata_location  
-            mtl = mtl.replace('s3a://', 's3://')
-            print(mtl)
-            con = duckdb.connect() 
-            con.execute(self.duckdb_s3_conf)
-            paT = con.execute(f"SELECT * FROM iceberg_scan('{mtl}') limit {limit}").arrow()            
-        ##
-        row_filter = self.get_row_filter(partition, table) 
-        tab_scan = table.scan(limit=limit, row_filter = row_filter)        
-        if table.metadata.current_snapshot_id is None:
-                return None
-        else:            
-            try:
-                rbr = tab_scan.to_arrow_batch_reader()
-                for batch in rbr:
-                    return self.paTable_to_dataTable(batch)                   
-            except PermissionError:                
-                if row_filter == AlwaysTrue():
-                    row_filter = ''
-        '''
 
     def get_schema(self, table):
         #table = self.catalog.load_table(table_id)
