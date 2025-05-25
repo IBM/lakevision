@@ -6,8 +6,10 @@ fastapi[standard]
 pyarrow>=17.0.0
 uvicorn
 gunicorn
-getdaft>=0.4.6
+getdaft[sql]>=0.4.6
 packaging
 httpx
 authlib
 itsdangerous
+humanize
+sqlglot

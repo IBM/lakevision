@@ -6,11 +6,13 @@ import json, os, time, re
 import pandas as pd
 import pyarrow as pa
 import daft
+import humanize
 import pyarrow.compute as pc
-#import duckdb
 import numpy as np
 import google.auth
 from google.auth.transport.requests import Request
+from sqlglot import parse_one
+import logging
 
 class LakeView():
     
@@ -99,12 +101,36 @@ class LakeView():
         cols = df_flattened.to_json(orient='records', default_handler = BinaryEncoder)                
         return cols
 
-    def get_sample_data(self, table, partition, limit=50):
-        df = daft.read_iceberg(table)        
-        df = df.limit(limit)            
+    def get_sample_data(self, table, sql, limit=50):
+        df = daft.read_iceberg(table)         
+        if sql:
+            logging.info(f"SQL is {sql}")
+            sql = parse_one(sql).from_("df").sql()
+            logging.info(sql)
+            df = daft.sql(sql)
+            curr_snapshot = table.current_snapshot()
+            if (
+                curr_snapshot
+                and "total-data-files" in curr_snapshot.summary.keys()
+                and int(curr_snapshot.summary["total-data-files"]) > 200
+            ):
+                optimized_plan = df._builder.optimize()._builder.repr_ascii(
+                    simple=False
+                )
+                logging.info(optimized_plan)
+                num_tasks = int(self.extract_num_scan_tasks(optimized_plan))
+                logging.info(f"Num tasks {num_tasks}")
+                if num_tasks > 300:
+                    raise Exception(
+                        f"Number of scan tasks ({num_tasks}) too high. Optimize the query or use a distributed query tool."
+                    )            
+        else:        
+            df = df.limit(limit)            
         paT = df.to_arrow()   
         paT = self.convertTimestamp(paT)     
         return self.paTable_to_dataTable(paT)         
+       
+
         '''
         fields = table.schema().fields
         struct_field = False
@@ -178,13 +204,10 @@ class LakeView():
         ret['Current snapshotid'] = table.metadata.current_snapshot_id
         if table.metadata.current_snapshot_id:
             paTable = table.inspect.snapshots().sort_by([('committed_at', 'descending')]).select(['summary', 'committed_at'])
-            ret['Last updated (UTC)'] = paTable.to_pydict()['committed_at'][0].strftime('%Y-%m-%d %H:%M:%S')
-            print(dict(paTable.to_pydict()['summary'][0]))
-            #paTable = paTable.select(['summary'])
-            result = dict(paTable.to_pydict()['summary'][0]) #[dict(inner_list) for inner_list in paTable.to_pydict()['summary']]
-            #print(result['total-records'])
-            ret['Total records'] = result['total-records']
-            ret['Total file size'] = result['total-files-size']
+            ret['Last updated (UTC)'] = paTable.to_pydict()['committed_at'][0].strftime('%Y-%m-%d %H:%M:%S')            
+            result = dict(paTable.to_pydict()['summary'][0])
+            ret['Total records'] = humanize.intcomma(result['total-records'])
+            ret['Total file size'] = humanize.naturalsize(result['total-files-size'])
             if 'total-data-files' in result:
                 ret['Total data files'] = result['total-data-files']
             ret['Total delete files'] = result['total-delete-files']        
@@ -266,6 +289,12 @@ class LakeView():
                     pc.strftime(paT[col], format="%Y-%m-%d %H:%M:%S")
                 )
         return paT
+    
+    def extract_num_scan_tasks(self, log_output):
+        match = re.search(r'\* Num Scan Tasks\s*=\s*(\d+)', log_output)
+        if match:
+            return int(match.group(1))
+        return None
         
 def get_gcp_access_token(service_account_file, scopes):
     """

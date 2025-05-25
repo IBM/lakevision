@@ -11,6 +11,7 @@
     import options from './options'        	
     import VirtualTable from '../lib/components/VirtTable3.svelte';
     import { goto } from "$app/navigation";
+    import QueryRunner from '../lib/components/QueryRunner.svelte';
 
     let namespace;    
     let table;
@@ -273,6 +274,7 @@
         <Tab label="Partitions" />
         <Tab label="Snapshots" />
         <Tab label="Sample Data" /> 
+        <Tab label="SQL" />
         <Tab label="Insights" />        
         <svelte:fragment slot="content">
             <TabContent><br/>                
@@ -354,7 +356,9 @@
                     Sample items: {sample_data.length}
                 {/if}
             </TabContent>
-
+            <TabContent><br/>
+                <QueryRunner tableName={namespace}.{table} pageSessionId=pageSessionId />
+            </TabContent>    
             <TabContent><br/>
                 {#if data_change_loading}                    
                     <br /> <Loading withOverlay={false} small /> <br />                    
