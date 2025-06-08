@@ -155,11 +155,20 @@ class LakeView():
             paTable = table.inspect.snapshots().sort_by([('committed_at', 'descending')]).select(['summary', 'committed_at'])
             ret['Last updated (UTC)'] = paTable.to_pydict()['committed_at'][0].strftime('%Y-%m-%d %H:%M:%S')            
             result = dict(paTable.to_pydict()['summary'][0])
-            ret['Total records'] = humanize.intcomma(result['total-records'])
-            ret['Total file size'] = humanize.naturalsize(result['total-files-size'])
-            if 'total-data-files' in result:
-                ret['Total data files'] = result['total-data-files']
-            ret['Total delete files'] = result['total-delete-files']        
+            total_records = int(result.get("total-records", -1))
+            total_file_size = int(result.get("total-files-size", -1))
+            total_data_files = int(result.get("total-data-files", -1))            
+            # snapshot summary doesn't always contains following 3 properties hence getting from files meta, which is slower
+            if total_records == -1 or total_file_size == -1 or total_data_files == -1:
+                files_meta = table.inspect.files().select(['record_count', 'file_size_in_bytes'])
+                total_records = pc.sum(files_meta['record_count']).as_py()
+                total_file_size = pc.sum(files_meta['file_size_in_bytes']).as_py()
+                total_data_files = files_meta.num_rows
+            ret['Total records'] = humanize.intcomma(total_records)
+            ret['Total file size'] = humanize.naturalsize(total_file_size)
+            ret['Total data files'] = humanize.intcomma(total_data_files)
+
+            ret['Total delete files'] = result.get('total-delete-files', 0)        
             ret['Total snapshots'] = paTable.num_rows 
         else:
             ret['Total records'] = '0'

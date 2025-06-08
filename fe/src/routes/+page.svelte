@@ -281,8 +281,12 @@
                 <Grid>
                     <Row>
                       <Column aspectRatio="2x1">                         
-                        <h5>Summary</h5>                     
-                        <JsonTable jsonData={summary} orient = "kv"></JsonTable>                                                  
+                        <h5>Summary</h5>
+                        {#if !summary_loading && properties}
+                             <JsonTable jsonData={summary} orient = "kv"></JsonTable>
+                        {:else}
+                            <Loading withOverlay={false} small />
+                        {/if}                                                                       
                         </Column>
                         <Column aspectRatio="2x1">
                             <h5>Schema</h5>
